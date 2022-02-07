@@ -3,7 +3,7 @@
 void GuiApp::setup() {
     ofSetEscapeQuitsApp(false);
     
-    midi.setup();
+//    midi.setup();
 
     ofSoundStream ss;
     soundDevices = ss.getDeviceList();

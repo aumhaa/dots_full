@@ -3,6 +3,7 @@
 #include "ofAppGLFWWindow.h"
 #include "ofApp.h"
 #include "StateManager.h"
+#include "MidiController.h"
 
 //========================================================================
 int main( ){
@@ -22,6 +23,7 @@ int main( ){
     settings.shareContextWith = mainWindow;
     shared_ptr<ofAppBaseWindow> guiWindow = ofCreateWindow(settings);
 
+
     shared_ptr<StateManager> stateManager(new StateManager());
     stateManager->setup();
 
@@ -32,6 +34,12 @@ int main( ){
     mainApp->gui = guiApp;
     mainApp->stateManager = stateManager;
     
+    shared_ptr<MidiController> midi(new MidiController());
+    midi->setup();
+    midi->stateManager = stateManager;
+    midi->gui = guiApp;
+    midi->add_listeners();
+
     ofRunApp(guiWindow, guiApp);
     ofRunApp(mainWindow, mainApp);
     ofRunMainLoop();

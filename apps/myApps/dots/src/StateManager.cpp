@@ -214,12 +214,6 @@ void StateManager::update() {
             }
         }
     }
-
-//    if (!wandering) {
-//        midiToSceneParams();
-//    } else {
-//        // TODO: apply to midi adjust
-//    }
 }
 
 void StateManager::flameWanderUpdate() {
@@ -335,15 +329,97 @@ void StateManager::initrc(long sed) {
     irandinit(&rc,1);
 }
 
-void StateManager::midiToSceneParams(MidiController &midi) {
-    if (midi.sliders[0] > 0) setParam(activeScene.clearSpeed, midi.sliders[0]);
-    if (midi.sliders[1] > 0) setParam(activeScene.overallScale, midi.sliders[1]);
-    if (midi.sliders[2] > 0) setParam(activeScene.basePointRadius, midi.sliders[2]);
-    if (midi.sliders[3] > 0) setParam(activeScene.maxLineLength, midi.sliders[3]);
-    if (midi.sliders[4] > 0) setParam(activeScene.audioEffectSize1, midi.sliders[4]);
-    if (midi.sliders[5] > 0) setParam(activeScene.audioEffectSize2, midi.sliders[5]);
-    if (midi.sliders[6] > 0) setParam(activeScene.audioEffectSize3, midi.sliders[6]);
-    if (midi.sliders[7] > 0) setParam(activeScene.audioEffectSize4, midi.sliders[7]);
+
+void StateManager::controllerToSceneParams(int n, float v){
+    cout << "controllerToSceneParams: " + std::to_string(n) + " - " + std::to_string(v) << endl;
+    switch(n) {
+        case 0:
+            setParam(activeTrack.wanderSpeed, v);
+            break;
+        case 1:
+            setParam(activeScene.fftDecayRate, v);
+            break;
+        case 2:
+            setParam(activeScene.centroidMaxBucket, v);
+            break;
+        case 3:
+            setParam(activeScene.rmsMultiple, v);
+            break;
+        case 4:
+            setParam(activeScene.mpxSmoothingFactor, v);
+            break;
+        case 5:
+            setParam(activeScene.mpySmoothingFactor, v);
+            break;
+        case 6:
+            setParam(activeScene.clearSpeed, v);
+            break;
+        case 7:
+            setParam(activeScene.particleAlpha, v);
+            break;
+        case 8:
+            setParam(activeScene.overallScale, v);
+            break;
+        case 9:
+            setParam(activeScene.saturationPct, v);
+            break;
+        case 10:
+            setParam(activeScene.baseSpeed, v);
+            break;
+        case 11:
+            setParam(activeScene.rmsSpeedMult, v);
+            break;
+        case 12:
+            setParam(activeScene.pointRadiusAudioScaleAmt, v);
+            break;
+        case 13:
+            setParam(activeScene.pointRadiusAudioScale, v);
+            break;
+        case 14:
+            setParam(activeScene.basePointRadius, v);
+            break;
+        case 15:
+            setParam(activeScene.maxLineLength, v);
+            break;
+        case 16:
+            setParam(activeScene.audioEffectSize1, v);
+            break;
+        case 17:
+            setParam(activeScene.audioEffectSize2, v);
+            break;
+        case 18:
+            setParam(activeScene.audioEffectSize3, v);
+            break;
+        case 19:
+            setParam(activeScene.audioEffectSize4, v);
+            break;
+    }
+}
+
+void StateManager::noteToSceneParams(int n){
+//    cout << "controllerToSceneParams: " + std::to_string(n) + " - " + std::to_string(v) << endl;
+    switch(n) {
+        case 0:
+            regressTrack();
+            break;
+        case 1:
+            advanceTrack();
+            break;
+        case 2:
+            regressScene();
+            break;
+        case 3:
+            advanceScene();
+            break;
+        case 4:
+            wandering = !wandering;
+            break;
+//        case 5:
+//            setParam(activeScene.audioEffectSize2, v);
+//            break;
+        default:
+            cout << "noteToSceneParams" << endl;
+    }
 }
 
 DotsTrack& StateManager::getTrack() {

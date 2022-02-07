@@ -4,7 +4,7 @@
 #include "ofxGui.h"
 #include "ofxXmlSettings.h"
 #include "appConstants.h"
-#include "MidiController.h"
+//#include "MidiController.h"
 #include "StateManager.h"
 
 class ReplaceablePanel : public ofxPanel {
@@ -63,5 +63,5 @@ public:
     shared_ptr<StateManager> stateManager;
 
     queue<int> keyPresses;
-    MidiController midi;
+//    MidiController midi;
 };

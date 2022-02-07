@@ -12,7 +12,9 @@
 #include "ofxGui.h"
 #include "ofxXmlSettings.h"
 #include "appConstants.h"
-#include "MidiController.h"
+//#include "MidiController.h"
+//#include "GuiApp.h"
+
 
 extern "C" {
 #include "flam3.h"
@@ -285,7 +287,10 @@ public:
     void mateCurrent();
     void mutateCurrent();
 
-    void midiToSceneParams(MidiController &midi);
+//    void midiToSceneParams(MidiController &midi);
+//    void midiToSceneParams();
+    void controllerToSceneParams(int n, float v);
+    void noteToSceneParams(int n);
 
     void genomeModified(int & genome);
 
@@ -354,6 +359,10 @@ public:
 
     ofEvent<int> onTrackUpdate;
     ofEvent<int> onSceneUpdate;
+
+//    shared_ptr<MidiController> midi;
+//    shared_ptr<GuiApp> gui;
+
 
 protected:
     int nextTrackId() { return ++maxTrackId; };
