@@ -41,13 +41,14 @@ public:
     void handleMpySmoothingFactorChanged(float & mpySmoothingFactor);
     void handlePointRadiusAudioScaleAmtChanged(float & pointRadiusAudioScaleAmt);
     void handlePointRadiusAudioScaleChanged(float & pointRadiusAudioScale);
+    void handleMotionIdChanged(int & motionId);
     
     void add_listeners();
 
     ofxMidiIn midiIn;
     ofxMidiOut midiOut;
 
-    float sliders[20];
+    float sliders[24];
     float knobs[16];
     int buttons[16];
 
@@ -73,6 +74,7 @@ public:
     float last_mpySmoothingFactor;
     float last_pointRadiusAudioScaleAmt;
     float last_pointRadiusAudioScale;
+    int last_motionId;
     
     // State manager
     shared_ptr<StateManager> stateManager;

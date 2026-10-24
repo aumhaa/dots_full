@@ -382,17 +382,24 @@ void StateManager::controllerToSceneParams(int n, float v){
             setParam(activeScene.maxLineLength, v);
             break;
         case 16:
-            setParam(activeScene.audioEffectSize1, v);
+//            cout << "activeSceine.motionId" + std::to_string(static_cast<int>(v*36.0)) + " " +  to_string(static_cast<int>(activeScene.motionId)) << endl;
+//            if (static_cast<int>(v*36.0)!=static_cast<int>(activeScene.motionId)) {
+            setParam(activeScene.motionId, v);
+//            }
             break;
         case 17:
-            setParam(activeScene.audioEffectSize2, v);
+            setParam(activeScene.audioEffectSize1, v);
             break;
         case 18:
-            setParam(activeScene.audioEffectSize3, v);
+            setParam(activeScene.audioEffectSize2, v);
             break;
         case 19:
+            setParam(activeScene.audioEffectSize3, v);
+            break;
+        case 20:
             setParam(activeScene.audioEffectSize4, v);
             break;
+
     }
 }
 

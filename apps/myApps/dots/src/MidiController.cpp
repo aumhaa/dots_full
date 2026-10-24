@@ -66,7 +66,7 @@ void MidiController::add_listeners() {
     stateManager->activeScene.mpySmoothingFactor.addListener(this, &MidiController::handleMpySmoothingFactorChanged, 0);
     stateManager->activeScene.pointRadiusAudioScaleAmt.addListener(this, &MidiController::handlePointRadiusAudioScaleAmtChanged, 0);
     stateManager->activeScene.pointRadiusAudioScale.addListener(this, &MidiController::handlePointRadiusAudioScaleChanged, 0);
-    
+    stateManager->activeScene.motionId.addListener(this, &MidiController::handleMotionIdChanged, 0);
 }
 
 
@@ -214,11 +214,20 @@ void MidiController::handleMaxLineLengthChanged(float & maxLineLength) {
     }
 }
 
+void MidiController::handleMotionIdChanged(int & motionId) {
+    if (motionId != last_motionId) {
+        last_motionId = motionId;
+        sliders[16] = (float)(motionId/36.0)*127.0;
+        midiOut.sendControlChange(1, 16, sliders[16]);
+        //        cout << "motionId:" + std::to_string(motionId) << endl;
+    }
+}
+
 void MidiController::handleAudioEffectSize1Changed(float & audioEffectSize1) {
     if (audioEffectSize1 != last_audioEffectSize1) {
         last_audioEffectSize1 = audioEffectSize1;
-        sliders[16] = (float)(audioEffectSize1)*127.0;
-        midiOut.sendControlChange(1, 16, sliders[16]);
+        sliders[17] = (float)(audioEffectSize1)*127.0;
+        midiOut.sendControlChange(1, 17, sliders[17]);
 //        cout << "audioEffectSize1:" + std::to_string(audioEffectSize1) << endl;
     }
 }
@@ -226,8 +235,8 @@ void MidiController::handleAudioEffectSize1Changed(float & audioEffectSize1) {
 void MidiController::handleAudioEffectSize2Changed(float & audioEffectSize2) {
     if (audioEffectSize2 != last_audioEffectSize2) {
         last_audioEffectSize2 = audioEffectSize2;
-        sliders[17] = (float)(audioEffectSize2)*127.0;
-        midiOut.sendControlChange(1, 17, sliders[17]);
+        sliders[18] = (float)(audioEffectSize2)*127.0;
+        midiOut.sendControlChange(1, 18, sliders[18]);
 //        cout << "audioEffectSize2:" + std::to_string(audioEffectSize2) << endl;
     }
 }
@@ -235,8 +244,8 @@ void MidiController::handleAudioEffectSize2Changed(float & audioEffectSize2) {
 void MidiController::handleAudioEffectSize3Changed(float & audioEffectSize3) {
     if (audioEffectSize3 != last_audioEffectSize3) {
         last_audioEffectSize3 = audioEffectSize3;
-        sliders[18] = (float)(audioEffectSize3)*127.0;
-        midiOut.sendControlChange(1, 18, sliders[18]);
+        sliders[19] = (float)(audioEffectSize3)*127.0;
+        midiOut.sendControlChange(1, 19, sliders[19]);
 //        cout << "audioEffectSize3:" + std::to_string(audioEffectSize3) << endl;
     }
 }
@@ -244,11 +253,12 @@ void MidiController::handleAudioEffectSize3Changed(float & audioEffectSize3) {
 void MidiController::handleAudioEffectSize4Changed(float & audioEffectSize4) {
     if (audioEffectSize4 != last_audioEffectSize4) {
         last_audioEffectSize4 = audioEffectSize4;
-        sliders[19] = (float)(audioEffectSize4)*127.0;
-        midiOut.sendControlChange(1, 19, sliders[19]);
+        sliders[20] = (float)(audioEffectSize4)*127.0;
+        midiOut.sendControlChange(1, 20, sliders[20]);
 //        cout << "audioEffectSize4:" + std::to_string(audioEffectSize4) << endl;
     }
 }
+
 
 void MidiController::handleWanderingChanged(bool & wandering) {
     if (wandering != last_wandering){
@@ -259,7 +269,7 @@ void MidiController::handleWanderingChanged(bool & wandering) {
 
 void MidiController::newMidiMessage(ofxMidiMessage& msg) {
 //    cout << "Rcv midi: " + std::to_string(msg.status) + " " + std::to_string(msg.channel) + " " + std::to_string(msg.control) + " " + std::to_string(msg.pitch) << endl;
-    if (msg.status == 176 && msg.channel == 1 && msg.control >= 0 && msg.control < 16) {
+    if (msg.status == 176 && msg.channel == 1 && msg.control >= 0 && msg.control < 24) {
         sliders[msg.control] = (float)msg.value/127.0;
         stateManager->controllerToSceneParams(msg.control, sliders[msg.control]);   
     } else if (msg.status == 144 && msg.channel == 1 && msg.pitch >=0 && msg.pitch <4 && msg.velocity > 0) {
