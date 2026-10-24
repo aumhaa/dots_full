@@ -13,6 +13,9 @@
 #include "ofMain.h"
 #include "ofxMidi.h"
 
+// CC (channel 1) that asks dots to send all its values and section colours
+#define DOTS_CC_SEND_ALL 127
+
 class MidiController : public ofxMidiListener {
 public:
     ~MidiController();
@@ -20,30 +23,10 @@ public:
 
     void newMidiMessage(ofxMidiMessage& eventArgs);
 
-    void handleWanderingChanged(bool & wandering);
-    void handleClearSpeedChanged(float & clearSpeed);
-    void handleOverallScaleChanged(float & overallScale);
-    void handleBasePointRadiusChanged(float & basePointRadius);
-    void handleMaxLineLengthChanged(float & maxLineLength);
-    void handleAudioEffectSize1Changed(float & audioEffectSize1);
-    void handleAudioEffectSize2Changed(float & audioEffectSize2);
-    void handleAudioEffectSize3Changed(float & audioEffectSize3);
-    void handleAudioEffectSize4Changed(float & audioEffectSize4);
-    void handleBaseSpeedChanged(float & baseSpeed);
-    void handleRmsSpeedMultChanged(float & rmsSpeedMult);
-    void handleSaturationPctChanged(float & saturationPct);
-    void handleParticleAlphaChanged(float & particleAlpha);
-    void handleWanderSpeedChanged(float & wanderSpeed);
-    void handleFftDecayRateChanged(float & fftDecayRate);
-    void handleCentroidMaxBucketChanged(float & centroidMaxBucket);
-    void handleRmsMultipleChanged(float & rmsMultiple);
-    void handleMpxSmoothingFactorChanged(float & mpxSmoothingFactor);
-    void handleMpySmoothingFactorChanged(float & mpySmoothingFactor);
-    void handlePointRadiusAudioScaleAmtChanged(float & pointRadiusAudioScaleAmt);
-    void handlePointRadiusAudioScaleChanged(float & pointRadiusAudioScale);
-    void handleMotionIdChanged(int & motionId);
-    
     void add_listeners();
+
+    // Call once a frame: sends parameters whose MIDI value changed, at most 20 times a second
+    void update();
 
     ofxMidiIn midiIn;
     ofxMidiOut midiOut;
@@ -52,38 +35,22 @@ public:
     float knobs[16];
     int buttons[16];
 
-    
-    bool last_wandering;
-    float last_clearSpeed;
-    float last_overallScale;
-    float last_basePointRadius;
-    float last_maxLineLength;
-    float last_audioEffectSize1;
-    float last_audioEffectSize2;
-    float last_audioEffectSize3;
-    float last_audioEffectSize4;
-    float last_baseSpeed;
-    float last_rmsSpeedMult;
-    float last_saturationPct;
-    float last_particleAlpha;
-    float last_wanderSpeed;
-    float last_fftDecayRate;
-    float last_centroidMaxBucket;
-    float last_rmsMultiple;
-    float last_mpxSmoothingFactor;
-    float last_mpySmoothingFactor;
-    float last_pointRadiusAudioScaleAmt;
-    float last_pointRadiusAudioScale;
-    int last_motionId;
-    
+    // One parameter sent back on CC `cc`, channel 1, scaled from its min..max to 0-127
+    struct Output {
+        int cc;
+        ofAbstractParameter *param;
+        int twisterColor;
+    };
+    vector<Output> outputs;
+    int sentValues[24];
+    float lastSendTime;
+    std::atomic<bool> sendAllRequested;
+
     // State manager
     shared_ptr<StateManager> stateManager;
-    
+
     //GUI App
     shared_ptr<GuiApp> gui;
 };
 
 #endif /* MidiController_h */
-
-
-

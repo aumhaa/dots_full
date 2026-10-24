@@ -11,6 +11,8 @@ extern "C" {
 #include "flam3.h"
 }
 
+class MidiController;
+
 typedef struct pointPair {
     int idx;
     ofVec3f pt1, pt2;
@@ -118,6 +120,9 @@ public:
 
     // State manager
     shared_ptr<StateManager> stateManager;
+
+    // Sends parameter changes back over MIDI
+    shared_ptr<MidiController> midi;
 
     std::queue<int> keyPresses;
     bool cmdKeyDown;

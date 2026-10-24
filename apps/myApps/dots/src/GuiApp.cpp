@@ -1,4 +1,20 @@
 #include "GuiApp.h"
+#include "DotsSections.h"
+
+// Tint each section the colour its knobs light up on the Twister
+static void colorSections(ofxPanel &panel) {
+    for (std::size_t i = 0; i < panel.getNumControls(); ++i) {
+        ofxGuiGroup *group = dynamic_cast<ofxGuiGroup *>(panel.getControl(i));
+        if (!group) continue;
+        int twisterColor = twisterColorForSection(group->getName());
+        if (!twisterColor) continue;
+
+        group->setHeaderBackgroundColor(guiColorForTwister(twisterColor, 110));
+        for (std::size_t j = 0; j < group->getNumControls(); ++j) {
+            group->getControl(j)->setFillColor(guiColorForTwister(twisterColor, 170));
+        }
+    }
+}
 
 void GuiApp::setup() {
     ofSetEscapeQuitsApp(false);
@@ -83,6 +99,8 @@ void GuiApp::setup() {
     // State manager must be set up first
     displayGui.setup(stateManager->activeScene.displayParameters);
     trackParamsGui.setup(stateManager->activeTrack.displayParameters);
+    colorSections(displayGui);
+    colorSections(trackParamsGui);
 
     inputGui.setPosition(10, 450);
     debugGui.setPosition(inputGui.getPosition().x + inputGui.getWidth() + 10, inputGui.getPosition().y);

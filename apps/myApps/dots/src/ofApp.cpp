@@ -2,6 +2,7 @@
 
 #include "variations.h" // for prepare_precalc_flags and CMAP_SIZE
 #include "AudioDeviceRate.h"
+#include "MidiController.h"
 
 // TODO: remove entirely
 static const double ispeed = 800.0;
@@ -722,6 +723,7 @@ void ofApp::update(){
 
     stateManager->update();
     guiUpdate();
+    if (midi) midi->update();
 
     if (stateManager->wandering) {
         flameWander();

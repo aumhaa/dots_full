@@ -37,6 +37,7 @@ int main( ){
     midi->stateManager = stateManager;
     midi->gui = guiApp;
     midi->add_listeners();
+    mainApp->midi = midi;
 
     ofRunApp(guiWindow, guiApp);
     ofRunApp(mainWindow, mainApp);
