@@ -1,7 +1,7 @@
 <track>
     <Track>
         <Wander>
-            <speed>0.1</speed>
+            <speed>0.629921</speed>
         </Wander>
     </Track>
     <scenes>
@@ -16,7 +16,7 @@
                 </Audio_Analysis>
                 <Drawing>
                     <clearSpeed>7.94128</clearSpeed>
-                    <particleAlpha>100.365</particleAlpha>
+                    <particleAlpha>255</particleAlpha>
                     <overallScale>0.632653</overallScale>
                     <saturationPct>0.806122</saturationPct>
                 </Drawing>
@@ -26,7 +26,7 @@
                 </Speed>
                 <Dots>
                     <pointRadiusAudioScaleAmt>0.632653</pointRadiusAudioScaleAmt>
-                    <dotAudioScale>6.63265</dotAudioScale>
+                    <dotAudioScale>7.39796</dotAudioScale>
                     <baseDotRadius>1.53061</baseDotRadius>
                 </Dots>
                 <Lines>
@@ -159,14 +159,14 @@
                     <mpySmoothingFactor>0.209184</mpySmoothingFactor>
                 </Audio_Analysis>
                 <Drawing>
-                    <clearSpeed>13.0087</clearSpeed>
-                    <particleAlpha>114.49</particleAlpha>
-                    <overallScale>0.632643</overallScale>
-                    <saturationPct>0.913265</saturationPct>
+                    <clearSpeed>12.9911</clearSpeed>
+                    <particleAlpha>114.489</particleAlpha>
+                    <overallScale>0.632529</overallScale>
+                    <saturationPct>0.897153</saturationPct>
                 </Drawing>
                 <Speed>
                     <baseSpeed>-0.484694</baseSpeed>
-                    <rmsSpeedMult>6.63266</rmsSpeedMult>
+                    <rmsSpeedMult>6.63273</rmsSpeedMult>
                 </Speed>
                 <Dots>
                     <pointRadiusAudioScaleAmt>0.632653</pointRadiusAudioScaleAmt>

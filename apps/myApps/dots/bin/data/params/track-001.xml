@@ -16,24 +16,24 @@
                 </Audio_Analysis>
                 <Drawing>
                     <clearSpeed>6.21577</clearSpeed>
-                    <particleAlpha>85.0053</particleAlpha>
-                    <overallScale>1</overallScale>
+                    <particleAlpha>22.1173</particleAlpha>
+                    <overallScale>2.45197</overallScale>
                     <saturationPct>0.688783</saturationPct>
                 </Drawing>
                 <Speed>
-                    <baseSpeed>0</baseSpeed>
-                    <rmsSpeedMult>12.9115</rmsSpeedMult>
+                    <baseSpeed>0.663265</baseSpeed>
+                    <rmsSpeedMult>23.9796</rmsSpeedMult>
                 </Speed>
                 <Dots>
                     <pointRadiusAudioScaleAmt>0.16839</pointRadiusAudioScaleAmt>
-                    <dotAudioScale>7.0064</dotAudioScale>
-                    <baseDotRadius>3.50042</baseDotRadius>
+                    <dotAudioScale>14.5408</dotAudioScale>
+                    <baseDotRadius>1.53061</baseDotRadius>
                 </Dots>
                 <Lines>
-                    <maxLineLength>76.3007</maxLineLength>
+                    <maxLineLength>933.673</maxLineLength>
                 </Lines>
                 <Audio_Effects>
-                    <motionId>0</motionId>
+                    <motionId>12</motionId>
                     <effectSize1>1</effectSize1>
                     <effectSize2>1</effectSize2>
                     <effectSize3>1</effectSize3>

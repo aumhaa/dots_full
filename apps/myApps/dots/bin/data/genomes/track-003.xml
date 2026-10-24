@@ -2,7 +2,7 @@
 <flame version="FLAM3-OSX-3.0" time="0" size="1280 960" center="-0.304492 -0.308134" scale="135.903" rotate="-360" supersample="2" filter="1" filter_shape="gaussian" temporal_filter_type="box" temporal_filter_width="1" quality="500" passes="1" temporal_samples="1" background="0 0 0" brightness="24.2696" gamma="4" highlight_power="-1" vibrancy="1" estimator_radius="5" estimator_minimum="0" estimator_curve="0.6" gamma_threshold="0.01" palette_mode="step" interpolation_type="log" palette_interpolation="hsv_circular">
    <xform weight="1" color="0" color_speed="0" animate="0" linear="1" coefs="-0.0274273 -0.858689 -0.611624 0.0888204 -0.339633 0.790674" opacity="1"/>
    <xform weight="1" color="1" color_speed="0" animate="0" linear="1" coefs="0.403811 0.946485 -1.03243 0.307629 -0.00440023 0.0999688" opacity="1"/>
-   <xform weight="0.0768056" color="0" color_speed="0.5" animate="1" spiral="0.860076" rings="0.916411" coefs="-0.105025 0.0165851 -0.210041 -0.115192 0.14884 0.100734" opacity="1"/>
+   <xform weight="0.0768056" color="0" color_speed="0.5" animate="1" spiral="0.860076" rings="0.916411" coefs="-0.106077 0.00728502 -0.199097 -0.133217 0.14884 0.100734" opacity="1"/>
    <color index="0" rgb="128 255 0"/>
    <color index="1" rgb="73 200 28"/>
    <color index="2" rgb="36 163 46"/>
@@ -264,7 +264,7 @@
 <flame version="FLAM3-OSX-3.0" time="0" size="1280 960" center="-0.304492 -0.308134" scale="135.903" rotate="-360" supersample="2" filter="1" filter_shape="gaussian" temporal_filter_type="box" temporal_filter_width="1" quality="500" passes="1" temporal_samples="1" background="0 0 0" brightness="24.2696" gamma="4" highlight_power="-1" vibrancy="1" estimator_radius="5" estimator_minimum="0" estimator_curve="0.6" gamma_threshold="0.01" palette_mode="step" interpolation_type="log" palette_interpolation="hsv_circular">
    <xform weight="1" color="0" color_speed="0" animate="0" linear="1" coefs="-1 0 0 1 0 0" opacity="1"/>
    <xform weight="1" color="1" color_speed="0" animate="0" linear="1" coefs="0.5 0.866025 -0.866025 0.5 0 0" opacity="1"/>
-   <xform weight="0.0768056" color="0" color_speed="0.5" animate="1" spiral="0.860076" rings="0.916411" coefs="-0.038006 0.0924962 -0.0924962 -0.038006 0.0939854 0.0935312" opacity="1"/>
+   <xform weight="0.0768056" color="0" color_speed="0.5" animate="1" spiral="0.860076" rings="0.916411" coefs="-0.0459928 0.0887956 -0.0887956 -0.0459928 0.0939854 0.0935312" opacity="1"/>
    <color index="0" rgb="128 255 0"/>
    <color index="1" rgb="73 200 28"/>
    <color index="2" rgb="36 163 46"/>

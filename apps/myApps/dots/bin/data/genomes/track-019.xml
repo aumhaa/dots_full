@@ -1,13 +1,13 @@
 <genomes>
 <flame version="FLAM3-OSX-3.0" time="28" name="electricsheep.245.06203" size="800 592" center="0.0103524 0.0026133" scale="398.239" rotate="2020.67" supersample="4" filter="1" filter_shape="gaussian" temporal_filter_type="box" temporal_filter_width="1" quality="2000" passes="1" temporal_samples="1000" background="0 0 0" brightness="31.8304" gamma="4" highlight_power="-1" vibrancy="1" estimator_radius="11" estimator_minimum="0" estimator_curve="0.6" gamma_threshold="0.01" palette_mode="linear" interpolation_type="log" palette_interpolation="hsv_circular">
-   <xform weight="0.5" color="0" color_speed="0.5" animate="1" julia="1" coefs="0.990054 -0.140689 0.140689 0.990054 0 0" opacity="1"/>
-   <xform weight="0.5" color="1" color_speed="0.5" animate="1" julia="1" coefs="-0.140689 -0.990054 0.990054 -0.140689 0 0" opacity="1"/>
-   <xform weight="0.025" color="0" color_speed="0.5" animate="1" julia="1" coefs="950.201 713.749 -713.749 950.201 -11.1486 -101.224" opacity="1"/>
-   <xform weight="0.042" color="1" color_speed="0.5" animate="1" spiral="1" coefs="0.61035 0.311982 0.977811 0.495271 1.94687 1.70311" opacity="1"/>
-   <xform weight="0.042" color="0" color_speed="0.5" animate="1" spiral="1" coefs="-0.389241 -0.490249 0.295388 -0.187284 6.28287 -2.15618" opacity="1"/>
+   <xform weight="0.5" color="0" color_speed="0.5" animate="1" julia="1" coefs="0.422962 -0.906147 0.906147 0.422962 0 0" opacity="1"/>
+   <xform weight="0.5" color="1" color_speed="0.5" animate="1" julia="1" coefs="-0.906147 -0.422962 0.422962 -0.906147 0 0" opacity="1"/>
+   <xform weight="0.025" color="0" color_speed="0.5" animate="1" julia="1" coefs="1116.89 -406.037 406.037 1116.89 -11.1486 -101.224" opacity="1"/>
+   <xform weight="0.042" color="1" color_speed="0.5" animate="1" spiral="1" coefs="0.594723 -0.340829 0.948973 -0.548505 1.94687 1.70311" opacity="1"/>
+   <xform weight="0.042" color="0" color_speed="0.5" animate="1" spiral="1" coefs="-0.623266 0.0582455 0.00447848 -0.349727 6.28287 -2.15618" opacity="1"/>
    <xform weight="0.6" color="1" color_speed="0.2" animate="0" linear="1" coefs="0.5 0.866025 0.866025 -0.5 0 0" opacity="1"/>
    <xform weight="0.25" color="0" color_speed="0" animate="0" linear="1" coefs="0.425773 0.904821 0.904821 -0.425773 0 0" opacity="1"/>
-   <xform weight="0.0260513" color="1" color_speed="0.5" animate="1" sinusoidal="-0.165" disc="1.095" coefs="-0.49645 0.47976 -0.117057 0.501417 -0.53355 -0.841519" opacity="1"/>
+   <xform weight="0.0260513" color="1" color_speed="0.5" animate="1" sinusoidal="-0.165" disc="1.095" coefs="0.13068 0.677905 0.35606 0.371945 -0.53355 -0.841519" opacity="1"/>
    <color index="0" rgb="123 0 131"/>
    <color index="1" rgb="119 0 138"/>
    <color index="2" rgb="103 0 141"/>
@@ -267,14 +267,14 @@
 </flame>
 
 <flame version="FLAM3-OSX-3.0" time="28" name="electricsheep.245.06203" size="800 592" center="0.0103524 0.0026133" scale="398.239" rotate="2020.67" supersample="4" filter="1" filter_shape="gaussian" temporal_filter_type="box" temporal_filter_width="1" quality="2000" passes="1" temporal_samples="1000" background="0 0 0" brightness="31.8304" gamma="4" highlight_power="-1" vibrancy="1" estimator_radius="11" estimator_minimum="0" estimator_curve="0.6" gamma_threshold="0.01" palette_mode="linear" interpolation_type="log" palette_interpolation="hsv_circular">
-   <xform weight="0.5" color="0" color_speed="0.5" animate="1" julia="1" coefs="0.222898 0.974842 -0.974842 0.222898 0 0" opacity="1"/>
-   <xform weight="0.5" color="1" color_speed="0.5" animate="1" julia="1" coefs="0.974842 -0.222898 0.222898 0.974842 0 0" opacity="1"/>
-   <xform weight="0.025" color="0" color_speed="0.5" animate="1" julia="1" coefs="-631.883 1006.5 -1006.5 -631.883 -11.1486 -101.224" opacity="1"/>
-   <xform weight="0.042" color="1" color_speed="0.5" animate="1" spiral="1" coefs="-0.259908 0.634277 -0.411862 1.01576 1.94687 1.70311" opacity="1"/>
-   <xform weight="0.042" color="0" color_speed="0.5" animate="1" spiral="1" coefs="0.456022 -0.428831 0.211304 0.278712 6.28287 -2.15618" opacity="1"/>
+   <xform weight="0.5" color="0" color_speed="0.5" animate="1" julia="1" coefs="0.938311 0.345792 -0.345792 0.938311 0 0" opacity="1"/>
+   <xform weight="0.5" color="1" color_speed="0.5" animate="1" julia="1" coefs="0.345792 -0.938311 0.938311 0.345792 0 0" opacity="1"/>
+   <xform weight="0.025" color="0" color_speed="0.5" animate="1" julia="1" coefs="497.913 1079.07 -1079.07 497.913 -11.1486 -101.224" opacity="1"/>
+   <xform weight="0.042" color="1" color_speed="0.5" animate="1" spiral="1" coefs="0.389316 0.564174 0.625854 0.899837 1.94687 1.70311" opacity="1"/>
+   <xform weight="0.042" color="0" color_speed="0.5" animate="1" spiral="1" coefs="-0.110103 -0.616222 0.34888 -0.0247505 6.28287 -2.15618" opacity="1"/>
    <xform weight="0.6" color="1" color_speed="0.2" animate="0" linear="1" coefs="0.5 0.866025 0.866025 -0.5 0 0" opacity="1"/>
    <xform weight="0.25" color="0" color_speed="0" animate="0" linear="1" coefs="0.425773 0.904821 0.904821 -0.425773 0 0" opacity="1"/>
-   <xform weight="0.0260513" color="1" color_speed="0.5" animate="1" sinusoidal="-0.165" disc="1.095" coefs="-0.519553 -0.45464 -0.509443 -0.0747643 -0.53355 -0.841519" opacity="1"/>
+   <xform weight="0.0260513" color="1" color_speed="0.5" animate="1" sinusoidal="-0.165" disc="1.095" coefs="-0.66462 0.18685 -0.340903 0.385885 -0.53355 -0.841519" opacity="1"/>
    <color index="0" rgb="123 0 131"/>
    <color index="1" rgb="119 0 138"/>
    <color index="2" rgb="103 0 141"/>
@@ -1068,14 +1068,14 @@
 </flame>
 
 <flame version="FLAM3-OSX-3.0" time="28" name="electricsheep.245.06203" size="800 592" center="0.0103524 0.0026133" scale="398.239" rotate="2020.67" supersample="4" filter="1" filter_shape="gaussian" temporal_filter_type="box" temporal_filter_width="1" quality="2000" passes="1" temporal_samples="1000" background="0 0 0" brightness="31.8304" gamma="4" highlight_power="-1" vibrancy="1" estimator_radius="11" estimator_minimum="0" estimator_curve="0.6" gamma_threshold="0.01" palette_mode="linear" interpolation_type="log" palette_interpolation="hsv_circular">
-   <xform weight="0.5" color="0" color_speed="0.5" animate="1" julia="1" coefs="-0.970182 -0.242378 0.242378 -0.970182 0 0" opacity="1"/>
-   <xform weight="0.5" color="1" color_speed="0.5" animate="1" julia="1" coefs="-0.242378 0.970182 -0.970182 -0.242378 0 0" opacity="1"/>
-   <xform weight="0.025" color="0" color_speed="0.5" animate="1" julia="1" coefs="-611.598 -1018.95 1018.95 -611.598 -11.1486 -101.224" opacity="1"/>
-   <xform weight="0.042" color="1" color_speed="0.5" animate="1" spiral="1" coefs="-0.447999 -0.518804 -0.719425 -0.826943 1.94687 1.70311" opacity="1"/>
-   <xform weight="0.042" color="0" color_speed="0.5" animate="1" spiral="1" coefs="0.176045 0.600717 -0.344163 0.0623041 6.28287 -2.15618" opacity="1"/>
+   <xform weight="0.5" color="0" color_speed="0.5" animate="1" julia="1" coefs="0.950397 0.311039 -0.311039 0.950397 0 0" opacity="1"/>
+   <xform weight="0.5" color="1" color_speed="0.5" animate="1" julia="1" coefs="0.311039 -0.950397 0.950397 0.311039 0 0" opacity="1"/>
+   <xform weight="0.025" color="0" color_speed="0.5" animate="1" julia="1" coefs="537.274 1060.02 -1060.02 537.274 -11.1486 -101.224" opacity="1"/>
+   <xform weight="0.042" color="1" color_speed="0.5" animate="1" spiral="1" coefs="0.409808 0.549471 0.658537 0.876206 1.94687 1.70311" opacity="1"/>
+   <xform weight="0.042" color="0" color_speed="0.5" animate="1" spiral="1" coefs="-0.132699 -0.611755 0.347733 -0.0375686 6.28287 -2.15618" opacity="1"/>
    <xform weight="0.6" color="1" color_speed="0.2" animate="0" linear="1" coefs="0.5 0.866025 0.866025 -0.5 0 0" opacity="1"/>
    <xform weight="0.25" color="0" color_speed="0" animate="0" linear="1" coefs="0.425773 0.904821 0.904821 -0.425773 0 0" opacity="1"/>
-   <xform weight="0.0260513" color="1" color_speed="0.5" animate="1" sinusoidal="-0.165" disc="1.095" coefs="0.640539 -0.257571 0.29721 -0.420462 -0.53355 -0.841519" opacity="1"/>
+   <xform weight="0.0260513" color="1" color_speed="0.5" animate="1" sinusoidal="-0.165" disc="1.095" coefs="-0.657297 0.211173 -0.326476 0.398165 -0.53355 -0.841519" opacity="1"/>
    <color index="0" rgb="123 0 131"/>
    <color index="1" rgb="119 0 138"/>
    <color index="2" rgb="103 0 141"/>
@@ -1335,14 +1335,14 @@
 </flame>
 
 <flame version="FLAM3-OSX-3.0" time="28" name="electricsheep.245.06203" size="800 592" center="0.0103524 0.0026133" scale="398.239" rotate="2020.67" supersample="4" filter="1" filter_shape="gaussian" temporal_filter_type="box" temporal_filter_width="1" quality="2000" passes="1" temporal_samples="1000" background="0 0 0" brightness="31.8304" gamma="4" highlight_power="-1" vibrancy="1" estimator_radius="11" estimator_minimum="0" estimator_curve="0.6" gamma_threshold="0.01" palette_mode="linear" interpolation_type="log" palette_interpolation="hsv_circular">
-   <xform weight="0.5" color="0" color_speed="0.5" animate="1" julia="1" coefs="-0.0407231 0.999171 -0.999171 -0.0407231 0 0" opacity="1"/>
-   <xform weight="0.5" color="1" color_speed="0.5" animate="1" julia="1" coefs="0.999171 0.0407231 -0.0407231 0.999171 0 0" opacity="1"/>
-   <xform weight="0.025" color="0" color_speed="0.5" animate="1" julia="1" coefs="-873.857 805.415 -805.415 -873.857 -11.1486 -101.224" opacity="1"/>
-   <xform weight="0.042" color="1" color_speed="0.5" animate="1" spiral="1" coefs="-0.417242 0.543847 -0.663977 0.87209 1.94687 1.70311" opacity="1"/>
-   <xform weight="0.042" color="0" color_speed="0.5" animate="1" spiral="1" coefs="0.552571 -0.294138 0.130762 0.324393 6.28287 -2.15618" opacity="1"/>
+   <xform weight="0.5" color="0" color_speed="0.5" animate="1" julia="1" coefs="0.111969 -0.993712 0.993712 0.111969 0 0" opacity="1"/>
+   <xform weight="0.5" color="1" color_speed="0.5" animate="1" julia="1" coefs="-0.993712 -0.111969 0.111969 -0.993712 0 0" opacity="1"/>
+   <xform weight="0.025" color="0" color_speed="0.5" animate="1" julia="1" coefs="929.14 -740.957 740.957 929.14 -11.1486 -101.224" opacity="1"/>
+   <xform weight="0.042" color="1" color_speed="0.5" animate="1" spiral="1" coefs="0.455013 -0.512664 0.724557 -0.82245 1.94687 1.70311" opacity="1"/>
+   <xform weight="0.042" color="0" color_speed="0.5" animate="1" spiral="1" coefs="-0.572165 0.253928 -0.107263 -0.332902 6.28287 -2.15618" opacity="1"/>
    <xform weight="0.6" color="1" color_speed="0.2" animate="0" linear="1" coefs="0.5 0.866025 0.866025 -0.5 0 0" opacity="1"/>
    <xform weight="0.25" color="0" color_speed="0" animate="0" linear="1" coefs="0.425773 0.904821 0.904821 -0.425773 0 0" opacity="1"/>
-   <xform weight="0.0260513" color="1" color_speed="0.5" animate="1" sinusoidal="-0.165" disc="1.095" coefs="-0.382043 -0.575045 -0.471971 -0.205828 -0.53355 -0.841519" opacity="1"/>
+   <xform weight="0.0260513" color="1" color_speed="0.5" animate="1" sinusoidal="-0.165" disc="1.095" coefs="0.340004 0.600858 0.456068 0.239006 -0.53355 -0.841519" opacity="1"/>
    <color index="0" rgb="123 0 131"/>
    <color index="1" rgb="119 0 138"/>
    <color index="2" rgb="103 0 141"/>

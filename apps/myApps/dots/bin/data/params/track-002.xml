@@ -8,7 +8,7 @@
         <scene>
             <Scene>
                 <Audio_Analysis>
-                    <fftDecayRate>0.9</fftDecayRate>
+                    <fftDecayRate>0.239796</fftDecayRate>
                     <centroidMax__mpx_>0.35</centroidMax__mpx_>
                     <rmsMult__mpy_>5</rmsMult__mpy_>
                     <mpxSmoothingFactor>0.4</mpxSmoothingFactor>
@@ -17,12 +17,12 @@
                 <Drawing>
                     <clearSpeed>5.20408</clearSpeed>
                     <particleAlpha>109.286</particleAlpha>
-                    <overallScale>1</overallScale>
-                    <saturationPct>0.72449</saturationPct>
+                    <overallScale>0.706633</overallScale>
+                    <saturationPct>0.678571</saturationPct>
                 </Drawing>
                 <Speed>
-                    <baseSpeed>0</baseSpeed>
-                    <rmsSpeedMult>2.04082</rmsSpeedMult>
+                    <baseSpeed>0.969388</baseSpeed>
+                    <rmsSpeedMult>1.53061</rmsSpeedMult>
                 </Speed>
                 <Dots>
                     <pointRadiusAudioScaleAmt>0.27551</pointRadiusAudioScaleAmt>
@@ -30,10 +30,10 @@
                     <baseDotRadius>2.80612</baseDotRadius>
                 </Dots>
                 <Lines>
-                    <maxLineLength>61.2245</maxLineLength>
+                    <maxLineLength>1086.73</maxLineLength>
                 </Lines>
                 <Audio_Effects>
-                    <motionId>0</motionId>
+                    <motionId>6</motionId>
                     <effectSize1>1</effectSize1>
                     <effectSize2>1</effectSize2>
                     <effectSize3>1</effectSize3>
@@ -51,8 +51,8 @@
                     <mpySmoothingFactor>0.1</mpySmoothingFactor>
                 </Audio_Analysis>
                 <Drawing>
-                    <clearSpeed>5.20408</clearSpeed>
-                    <particleAlpha>109.286</particleAlpha>
+                    <clearSpeed>239.388</clearSpeed>
+                    <particleAlpha>205.561</particleAlpha>
                     <overallScale>1</overallScale>
                     <saturationPct>0.72449</saturationPct>
                 </Drawing>
@@ -66,7 +66,7 @@
                     <baseDotRadius>2.80612</baseDotRadius>
                 </Dots>
                 <Lines>
-                    <maxLineLength>61.2245</maxLineLength>
+                    <maxLineLength>887.755</maxLineLength>
                 </Lines>
                 <Audio_Effects>
                     <motionId>0</motionId>

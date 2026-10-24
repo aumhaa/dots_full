@@ -52,7 +52,7 @@
                 </Audio_Analysis>
                 <Drawing>
                     <clearSpeed>7.80612</clearSpeed>
-                    <particleAlpha>109.286</particleAlpha>
+                    <particleAlpha>212.835</particleAlpha>
                     <overallScale>1.28367</overallScale>
                     <saturationPct>0.831633</saturationPct>
                 </Drawing>
@@ -66,7 +66,7 @@
                     <baseDotRadius>9.94898</baseDotRadius>
                 </Dots>
                 <Lines>
-                    <maxLineLength>61.2245</maxLineLength>
+                    <maxLineLength>2716.54</maxLineLength>
                 </Lines>
                 <Audio_Effects>
                     <motionId>0</motionId>
@@ -83,13 +83,13 @@
                     <fftDecayRate>0.9</fftDecayRate>
                     <centroidMax__mpx_>0.35</centroidMax__mpx_>
                     <rmsMult__mpy_>5</rmsMult__mpy_>
-                    <mpxSmoothingFactor>0.4</mpxSmoothingFactor>
+                    <mpxSmoothingFactor>0.244094</mpxSmoothingFactor>
                     <mpySmoothingFactor>0.1</mpySmoothingFactor>
                 </Audio_Analysis>
                 <Drawing>
                     <clearSpeed>11.7092</clearSpeed>
-                    <particleAlpha>109.286</particleAlpha>
-                    <overallScale>1.28367</overallScale>
+                    <particleAlpha>78.3071</particleAlpha>
+                    <overallScale>2.15512</overallScale>
                     <saturationPct>0.831633</saturationPct>
                 </Drawing>
                 <Speed>
@@ -99,10 +99,10 @@
                 <Dots>
                     <pointRadiusAudioScaleAmt>0.178571</pointRadiusAudioScaleAmt>
                     <dotAudioScale>6.88775</dotAudioScale>
-                    <baseDotRadius>2.80612</baseDotRadius>
+                    <baseDotRadius>0.787402</baseDotRadius>
                 </Dots>
                 <Lines>
-                    <maxLineLength>61.2245</maxLineLength>
+                    <maxLineLength>992.126</maxLineLength>
                 </Lines>
                 <Audio_Effects>
                     <motionId>0</motionId>

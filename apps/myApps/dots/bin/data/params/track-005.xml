@@ -8,29 +8,29 @@
         <scene>
             <Scene>
                 <Audio_Analysis>
-                    <fftDecayRate>0.9</fftDecayRate>
+                    <fftDecayRate>1</fftDecayRate>
                     <centroidMax__mpx_>0.35</centroidMax__mpx_>
                     <rmsMult__mpy_>5</rmsMult__mpy_>
                     <mpxSmoothingFactor>0.4</mpxSmoothingFactor>
-                    <mpySmoothingFactor>0.1</mpySmoothingFactor>
+                    <mpySmoothingFactor>0.392857</mpySmoothingFactor>
                 </Audio_Analysis>
                 <Drawing>
-                    <clearSpeed>7.80612</clearSpeed>
-                    <particleAlpha>66.352</particleAlpha>
-                    <overallScale>1.49082</overallScale>
-                    <saturationPct>0.831633</saturationPct>
+                    <clearSpeed>140.51</clearSpeed>
+                    <particleAlpha>255</particleAlpha>
+                    <overallScale>0.529082</overallScale>
+                    <saturationPct>0.408163</saturationPct>
                 </Drawing>
                 <Speed>
                     <baseSpeed>0</baseSpeed>
                     <rmsSpeedMult>2.04082</rmsSpeedMult>
                 </Speed>
                 <Dots>
-                    <pointRadiusAudioScaleAmt>0.408163</pointRadiusAudioScaleAmt>
+                    <pointRadiusAudioScaleAmt>0.607143</pointRadiusAudioScaleAmt>
                     <dotAudioScale>13.5204</dotAudioScale>
                     <baseDotRadius>3.9391</baseDotRadius>
                 </Dots>
                 <Lines>
-                    <maxLineLength>122.449</maxLineLength>
+                    <maxLineLength>1484.69</maxLineLength>
                 </Lines>
                 <Audio_Effects>
                     <motionId>0</motionId>
