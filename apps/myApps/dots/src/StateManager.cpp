@@ -165,7 +165,8 @@ void StateManager::setup() {
 void StateManager::loadGenebanks() {
     {
         FILE *in;
-        char *inf = "../../../data/live.flam3";
+        string path = ofToDataPath("live.flam3", true);
+        char *inf = (char *)path.c_str();
         in = fopen(inf, "rb");
         if (!in) {
             cout << "couldn't open flame3, exiting" << endl;
@@ -182,8 +183,9 @@ void StateManager::loadGenebanks() {
     }
     {
         FILE *in;
-        char *inf = "../../../data/genebank2.flam3";
-        in = fopen("../../../data/genebank2.flam3", "rb");
+        string path = ofToDataPath("genebank2.flam3", true);
+        char *inf = (char *)path.c_str();
+        in = fopen(inf, "rb");
         if (!in) {
             cout << "couldn't open genebank, exiting" << endl;
             std::exit(1);
@@ -672,7 +674,7 @@ void StateManager::serializeCurrentTrackToFile() {
     settings.addTag("track");
     settings.pushTag("track");
 
-    settings.serialize(getTrack().displayParameters);
+    ofSerialize(settings, getTrack().displayParameters);
 
     settings.addTag("scenes");
     settings.pushTag("scenes");
@@ -681,7 +683,7 @@ void StateManager::serializeCurrentTrackToFile() {
         DotsScene *scene = getTrack().scenes[i];
         settings.addTag("scene");
         settings.pushTag("scene", i);
-        settings.serialize(scene->displayParameters);
+        ofSerialize(settings, scene->displayParameters);
         settings.popTag();
 
         flameFile << flam3_print_to_string(scene->genome) << endl;
@@ -720,7 +722,7 @@ void StateManager::loadAllParamsFromFile() {
         settings.loadFile(file.getAbsolutePath());
         settings.pushTag("track");
 
-        settings.deserialize(track.displayParameters);
+        ofDeserialize(settings, track.displayParameters);
 
         settings.pushTag("scenes");
         int nScenes = settings.getNumTags("scene");
@@ -729,7 +731,7 @@ void StateManager::loadAllParamsFromFile() {
             scene->setupParams();
 
             settings.pushTag("scene", i);
-            settings.deserialize(scene->displayParameters);
+            ofDeserialize(settings, scene->displayParameters);
             settings.popTag();
 
             track.scenes.push_back(scene);

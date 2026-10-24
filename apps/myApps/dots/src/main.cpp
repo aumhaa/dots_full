@@ -9,15 +9,13 @@
 int main( ){
     ofGLFWWindowSettings settings;
     
-    settings.width = 1080;
-    settings.height = 720;
+    settings.setSize(1080, 720);
     settings.setPosition(ofVec2f(300,0));
     settings.resizable = true;
     settings.setGLVersion(3, 3);
     shared_ptr<ofAppBaseWindow> mainWindow = ofCreateWindow(settings);
     
-    settings.width = 650;
-    settings.height = 720;
+    settings.setSize(650, 720);
     settings.setPosition(ofVec2f(0,0));
     settings.resizable = true;
     settings.shareContextWith = mainWindow;

@@ -9,54 +9,41 @@
 
 #include "ofxSyphonServer.h"
 #import <Syphon/Syphon.h>
+#import <string>
+#import "ofAppRunner.h"
+#import "ofTexture.h"
+#include "ofLog.h"
 
 ofxSyphonServer::ofxSyphonServer()
 {
-	mSyphon = nil;
-}
-
-ofxSyphonServer::~ofxSyphonServer()
-{
-    NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
-    
-    [(SyphonServer *)mSyphon stop];
-
-    // DELIBERATELY LEAK TO PREVENT CRASH
-    //[(SyphonServer *)mSyphon release];
-
-    [pool drain];
-}
-
-
-void ofxSyphonServer::setName(string n)
-{
-    NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
-    
-	NSString *title = [NSString stringWithCString:n.c_str()
-										 encoding:[NSString defaultCStringEncoding]];
 	
-	if (!mSyphon)
-	{
-		mSyphon = [[SyphonServer alloc] initWithName:title context:CGLGetCurrentContext() options:nil];
-	}
-	else
-	{
-		[(SyphonServer *)mSyphon setName:title];
-	}
-    
-    [pool drain];
 }
 
-string ofxSyphonServer::getName()
+void ofxSyphonServer::setName(const std::string &n)
 {
-	string name;
+    @autoreleasepool {
+        NSString *title = [NSString stringWithCString:n.c_str()
+                                             encoding:[NSString defaultCStringEncoding]];
+        
+        if (!mSyphon)
+        {
+            ofxSNOSet(mSyphon, [[SyphonOpenGLServer alloc] initWithName:title context:CGLGetCurrentContext() options:nil]);
+        }
+        else
+        {
+            [(SyphonOpenGLServer *)ofxSNOGet(mSyphon) setName:title];
+        }
+    }
+}
+
+std::string ofxSyphonServer::getName() const
+{
+	std::string name;
 	if (mSyphon)
 	{
-		NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
-        
-		name = [[(SyphonServer *)mSyphon name] cStringUsingEncoding:[NSString defaultCStringEncoding]];
-		
-		[pool drain];
+        @autoreleasepool {
+            name = [[(SyphonOpenGLServer *)ofxSNOGet(mSyphon) name] cStringUsingEncoding:[NSString defaultCStringEncoding]];
+        }
 	}
 	else
 	{
@@ -80,61 +67,37 @@ void ofxSyphonServer::publishScreen()
 	tex.clear();
 }
 
-void ofxSyphonServer::publishFBO(ofFbo* inputFbo){
-    // If we are setup, and our input texture
-	if(inputFbo->isAllocated())
-    {
-        NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
-        
-		if (!mSyphon)
-		{
-			mSyphon = [[SyphonServer alloc] initWithName:@"Untitled" context:CGLGetCurrentContext() options:nil];
-		}
-        
-        [(SyphonServer *)mSyphon publishFramebuffer:inputFbo->getFbo() imageRegion:NSMakeRect(0, 0, inputFbo->getWidth(), inputFbo->getHeight()) textureDimensions:NSMakeSize(inputFbo->getWidth(), inputFbo->getHeight())];
-        
-        [pool drain];
-    }
-    else
-    {
-		cout<<"ofxSyphonServer FBO is not properly backed.  Cannot draw.\n";
-	}
-}
-
 
 void ofxSyphonServer::publishTexture(ofTexture* inputTexture)
 {
     // If we are setup, and our input texture
 	if(inputTexture->isAllocated())
     {
-        NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
-        
 		ofTextureData texData = inputTexture->getTextureData();
         
-		if (!mSyphon)
-		{
-			mSyphon = [[SyphonServer alloc] initWithName:@"Untitled" context:CGLGetCurrentContext() options:nil];
-		}
-		
-		[(SyphonServer *)mSyphon publishFrameTexture:texData.textureID textureTarget:texData.textureTarget imageRegion:NSMakeRect(0, 0, texData.width, texData.height) textureDimensions:NSMakeSize(texData.width, texData.height) flipped:!texData.bFlipTexture];
-        [pool drain];
+        @autoreleasepool {
+            if (!mSyphon)
+            {
+                ofxSNOSet(mSyphon, [[SyphonOpenGLServer alloc] initWithName:@"Untitled" context:CGLGetCurrentContext() options:nil]);
+            }
+            
+            [(SyphonOpenGLServer *)ofxSNOGet(mSyphon) publishFrameTexture:texData.textureID textureTarget:texData.textureTarget imageRegion:NSMakeRect(0, 0, texData.width, texData.height) textureDimensions:NSMakeSize(texData.width, texData.height) flipped:!texData.bFlipTexture];
+        }
     }
     else
     {
-		cout<<"ofxSyphonServer texture is not properly backed.  Cannot draw.\n";
+		ofLogError("ofxSyphonServer") << "ofxSyphonServer texture is not properly backed.  Cannot draw.";
 	}
 }
 
 void ofxSyphonServer::publishTexture(GLuint id, GLenum target, GLsizei width, GLsizei height, bool isFlipped)
 {
-    NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
-    
-    if (!mSyphon)
-    {
-        mSyphon = [[SyphonServer alloc] initWithName:@"Untitled" context:CGLGetCurrentContext() options:nil];
+    @autoreleasepool {
+        if (!mSyphon)
+        {
+            ofxSNOSet(mSyphon, [[SyphonOpenGLServer alloc] initWithName:@"Untitled" context:CGLGetCurrentContext() options:nil]);
+        }
+        
+        [(SyphonOpenGLServer *)ofxSNOGet(mSyphon) publishFrameTexture:id textureTarget:target imageRegion:NSMakeRect(0, 0, width, height) textureDimensions:NSMakeSize(width, height) flipped:!isFlipped];
     }
-    
-    [(SyphonServer *)mSyphon publishFrameTexture:id textureTarget:target imageRegion:NSMakeRect(0, 0, width, height) textureDimensions:NSMakeSize(width, height) flipped:!isFlipped];
-    [pool drain];
-    
 }

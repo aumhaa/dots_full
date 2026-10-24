@@ -62,6 +62,6 @@ public:
     // State manager
     shared_ptr<StateManager> stateManager;
 
-    queue<int> keyPresses;
+    std::queue<int> keyPresses;
 //    MidiController midi;
 };

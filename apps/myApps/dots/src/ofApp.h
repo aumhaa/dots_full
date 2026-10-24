@@ -2,7 +2,6 @@
 
 #include "ofMain.h"
 #include "ofxFft.h"
-#include "fmod.h"
 #include "GuiApp.h"
 #include "appConstants.h"
 #include "ofxSyphon.h"
@@ -41,9 +40,10 @@ public:
     void mousePressed(int x, int y, int button);
     void mouseReleased(int x, int y, int button);
     void windowResized(int w, int h);
-    void audioIn(float * input, int bufferSize, int nChannels);
+    void audioIn(ofSoundBuffer & buffer);
 
     void guiUpdate();
+    bool startSoundStream(int deviceIdx);
 
     void setFlameParameters(flam3_genome &renderCp, flam3_genome &cp, const int motionId);
     void renderFlame(flam3_genome *toRender, double *flameSamples, const int nSamples,
@@ -119,7 +119,7 @@ public:
     // State manager
     shared_ptr<StateManager> stateManager;
 
-    queue<int> keyPresses;
+    std::queue<int> keyPresses;
     bool cmdKeyDown;
 };
 

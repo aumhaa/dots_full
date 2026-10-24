@@ -1,13 +1,19 @@
-### Requirements
+### Building (openFrameworks 0.12.1, Apple Silicon)
 
-Add to `OF_DIR/addons`:
+The last openFrameworks 0.9.3 (Intel) version is tagged `of-0.9.3-final`.
 
-- ofxFFT: https://github.com/kylemcdonald/ofxFft (disable FFTW)
-- ofxMidi: https://github.com/danomatika/ofxMidi/
+1. Unpack `of_v0.12.1_osx_release` to `~/openFrameworks/of_v0.12.1_osx_release`.
+2. Open `dots.xcodeproj` and build the `dots Release` scheme, or:
+   `xcodebuild -project dots.xcodeproj -scheme "dots Release" -configuration Release`
+   The app is `bin/dots.app`.
 
-Pre-packaged for 64bit OSX:
+The addons live in `addons/` (ofxMidi 1.3.0, ofxSyphon master 2025-03-29,
+ofxFft master using KISS FFT); ofxGui and ofxXmlSettings come with openFrameworks.
 
-- ofxSyphon: https://github.com/astellato/ofxSyphon
+If you regenerate the project with the project generator, run
+`python3 scripts/postgen_xcodeproj.py dots.xcodeproj/project.pbxproj` afterwards:
+it takes flam3's command-line tools out of the build, links libxml2, and fixes
+the Syphon framework path.
 
 ### Running multiple screens
 

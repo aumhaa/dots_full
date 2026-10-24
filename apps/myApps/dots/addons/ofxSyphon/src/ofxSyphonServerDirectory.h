@@ -7,8 +7,10 @@
 //
 //
 
-#include "ofMain.h"
 #include <algorithm>
+#include <string>
+#include <vector>
+#include "ofEvents.h"
 
 class ofxSyphonServerDirectory;
 
@@ -19,7 +21,7 @@ public:
         serverName = appName = "null";
     }
     
-	ofxSyphonServerDescription(string _serverName, string _appName)
+	ofxSyphonServerDescription(const std::string &_serverName, const std::string &_appName)
 	{
         serverName = _serverName;
         appName = _appName;
@@ -30,12 +32,12 @@ public:
         return (lhs.serverName == rhs.serverName) && (lhs.appName == rhs.appName);
     }
     
-	string serverName, appName;
+	std::string serverName, appName;
 };
 
 class ofxSyphonServerDirectoryEventArgs : public ofEventArgs {
 public:
-	vector<ofxSyphonServerDescription> servers;
+	std::vector<ofxSyphonServerDescription> servers;
 };
 
 class ofxSyphonServerDirectoryEvents {
@@ -51,21 +53,23 @@ public:
 	~ofxSyphonServerDirectory();
 	
     void setup();
-    bool isSetup();
-    int size();
+    bool isSetup() const;
+    int size() const;
 
-    bool isValidIndex(int _idx);
-    bool serverExists(string _serverName, string _appName);
-    bool serverExists(ofxSyphonServerDescription _server);
-    ofxSyphonServerDescription& getDescription(int _idx);
+    bool isValidIndex(int _idx) const;
+    bool serverExists(const std::string &_serverName, const std::string &_appName) const;
+    bool serverExists(const ofxSyphonServerDescription &_server) const;
+    const ofxSyphonServerDescription& getDescription(int _idx) const;
     
-    vector<ofxSyphonServerDescription>& getServerList();
+    const std::vector<ofxSyphonServerDescription>& getServerList() const;
 	ofxSyphonServerDirectoryEvents events;
     
-    //needs to be public because of the nature of CFNotifications.  please do not call this.
-    void handleNotification(CFStringRef name, CFDictionaryRef userInfo);
+    // copy and assignment are not supported
+    ofxSyphonServerDirectory(const ofxSyphonServerDirectory &o) = delete;
+    ofxSyphonServerDirectory &operator=(const ofxSyphonServerDirectory &o) = delete;
 	
 private:
+    friend void handleNotification(const void *, void *);
 	void update(ofEventArgs& args);
     void refresh(bool isAnnounce);
     void serverAnnounced();
@@ -74,10 +78,7 @@ private:
     
     void addObservers();
     void removeObservers();
-    
-    bool CFStringRefToString(CFStringRef src, std::string &dest);
 
 	bool bSetup;
-    vector<ofxSyphonServerDescription> serverList;
+	std::vector<ofxSyphonServerDescription> serverList;
 };
-

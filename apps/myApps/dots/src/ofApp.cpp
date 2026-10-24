@@ -1,6 +1,7 @@
 #include "ofApp.h"
 
 #include "variations.h" // for prepare_precalc_flags and CMAP_SIZE
+#include "AudioDeviceRate.h"
 
 // TODO: remove entirely
 static const double ispeed = 800.0;
@@ -43,9 +44,8 @@ void ofApp::setup(){
     
     visualsFbo.allocate(ofGetWidth(), ofGetHeight(), GL_RGBA, 4);
 
-    memset(&cp, 0, sizeof(flam3_genome));
+    // cp and cp2 are pointers, set just below
     memset(&renderCp, 0, sizeof(flam3_genome));
-    memset(&cp2, 0, sizeof(flam3_genome));
     memset(&renderCp2, 0, sizeof(flam3_genome));
 
     cp = stateManager->currScene->genome;
@@ -60,8 +60,7 @@ void ofApp::setup(){
     int bufferSize = 512;
     soundStreamDevice = 0;
     nChannels = 1;
-    soundStream.setup(this, 0, nChannels, 44100, bufferSize, 4);
-    soundStream.setDeviceID(soundStreamDevice);
+    startSoundStream(soundStreamDevice);
     fft = ofxFft::create(bufferSize, OF_FFT_WINDOW_HANN);
     nFftBuckets = fft->getBinSize();
     
@@ -194,8 +193,7 @@ void ofApp::guiUpdate() {
     if (soundStreamDevice != gui->soundStreamDevice) {
         soundStreamDevice = gui->soundStreamDevice;
         soundStream.close();
-        soundStream.setDeviceID(soundStreamDevice);
-        bool streamStarted = soundStream.setup(this, 0, nChannels, 44100, 512, 4);
+        bool streamStarted = startSoundStream(soundStreamDevice);
         if (streamStarted) {
             cout << "Started audio stream with device " << soundStreamDevice << endl;
         } else {
@@ -216,6 +214,38 @@ void ofApp::guiUpdate() {
 
         cout << "Now using " << flameSequences.size() << " flame sequences." << endl;
     }
+}
+
+// deviceIdx is a position in getDeviceList(), the same list GuiApp shows
+bool ofApp::startSoundStream(int deviceIdx) {
+    ofSoundStreamSettings settings;
+    settings.setInListener(this);
+    settings.numInputChannels = nChannels;
+    settings.numOutputChannels = 0;
+    settings.sampleRate = 44100;
+    settings.bufferSize = 512;
+    settings.numBuffers = 4;
+
+    vector<ofSoundDevice> devices = soundStream.getDeviceList();
+    if (deviceIdx < 0 || deviceIdx >= devices.size()) {
+        return soundStream.setup(settings);
+    }
+    const ofSoundDevice &device = devices[deviceIdx];
+    if (device.inputChannels < nChannels) {
+        cout << "Audio device " << device.name << " has no input" << endl;
+        return false;
+    }
+    settings.setInDevice(device);
+
+    // Open the device at the rate it is already running at: some interfaces
+    // refuse 44.1 kHz, and changing the rate would disturb other apps (Live)
+    // using the same interface.
+    double rate = currentSampleRate(device.name);
+    if (rate > 0) {
+        settings.sampleRate = rate;
+    }
+    cout << "Audio input " << device.name << " at " << settings.sampleRate << " Hz" << endl;
+    return soundStream.setup(settings);
 }
 
 void ofApp::handleTrackChanged(int & trackIdx) {
@@ -702,7 +732,11 @@ void ofApp::update(){
 }
 
 //--------------------------------------------------------------
-void ofApp::audioIn(float * input, int bufferSize, int nChannels){
+void ofApp::audioIn(ofSoundBuffer & buffer){
+    // Mono input, so frames == samples
+    float *input = buffer.getBuffer().data();
+    const int bufferSize = buffer.getNumFrames();
+
     if (audioMode == AUDIO_MODE_MIC) {
         memcpy(audioInput, input, sizeof(float) * bufferSize);
     } else if (audioMode == AUDIO_MODE_NOISE) {
@@ -834,7 +868,7 @@ void ofApp::draw(){
     ofSetColor(255);
     visualsFbo.draw(0, 0);
 
-    syphonServer.publishFBO(&visualsFbo);
+    syphonServer.publishTexture(&visualsFbo.getTexture());
 
 //    char str[25];
 //    sprintf(str, "%.2f fps", ofGetFrameRate());

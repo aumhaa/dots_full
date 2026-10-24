@@ -14,6 +14,23 @@ void GuiApp::setup() {
     audioInputParameters.add(soundStreamDevice.set("soundStreamDevice", 0, 0, nSoundDevices-1));
     inputGui.setup(audioInputParameters);
 
+    // Start on the MacBook's built-in mic, else the system's default input
+    int macbookMic = -1, defaultInput = -1;
+    for (int i = 0; i < soundDevices.size(); ++i) {
+        const ofSoundDevice &sd = soundDevices[i];
+        if (sd.inputChannels > 0 && sd.name.find("MacBook") != string::npos && sd.name.find("Microphone") != string::npos) {
+            macbookMic = i;
+        }
+        if (sd.isDefaultInput) {
+            defaultInput = i;
+        }
+    }
+    if (macbookMic >= 0) {
+        soundStreamDevice.set(macbookMic);
+    } else if (defaultInput >= 0) {
+        soundStreamDevice.set(defaultInput);
+    }
+
     // Auto select loopback if available
     for (int i = 0; i < soundDevices.size(); ++i) {
         ofSoundDevice &sd = soundDevices[i];
@@ -159,7 +176,7 @@ void GuiApp::draw() {
         ofTranslate(0, margin);
         // TODO fit visuals to a bounding box
         
-        float scale = min(480.0 / visuals->getWidth(), 270.0 / visuals->getHeight());
+        float scale = std::min(480.0 / visuals->getWidth(), 270.0 / visuals->getHeight());
         float width = visuals->getWidth() * scale;
         float height = visuals->getHeight() * scale;
 

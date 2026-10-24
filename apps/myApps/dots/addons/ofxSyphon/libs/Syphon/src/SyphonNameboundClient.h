@@ -44,19 +44,22 @@
 */
 
 #import <Cocoa/Cocoa.h>
-#import <libkern/OSAtomic.h>
 #import <Syphon/Syphon.h>
+#import <os/lock.h>
 
 
 @interface SyphonNameboundClient : NSObject {
 @private
 	NSString *_name;
-	OSSpinLock _lock;
+	os_unfair_lock _lock;
+
 	NSString *_appname;
-	SyphonClient *_client;
-	SyphonClient *_lockedClient;
+	SyphonOpenGLClient *_client;
+	SyphonOpenGLClient *_lockedClient;
 	BOOL _searchPending;
+    CGLContextObj _context;
 }
+- (id)initWithContext:(CGLContextObj)context;
 @property (readwrite, retain) NSString *name;
 @property (readwrite, retain) NSString *appName;
 - (void)lockClient;
@@ -66,5 +69,5 @@
 
 	Only use this property (and the client it returns) between lock/unlockClient calls.
  */
-@property (readonly) SyphonClient *client;
+@property (readonly) SyphonOpenGLClient *client;
 @end
