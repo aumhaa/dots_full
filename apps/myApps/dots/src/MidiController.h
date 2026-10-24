@@ -16,6 +16,11 @@
 // CC (channel 1) that asks dots to send all its values and section colours
 #define DOTS_CC_SEND_ALL 127
 
+// MilkDrop: mix over the flames (CC, channel 1), previous/next preset (notes, channel 1)
+#define DOTS_CC_MILKDROP_MIX 21
+#define DOTS_NOTE_PREV_PRESET 5
+#define DOTS_NOTE_NEXT_PRESET 6
+
 class MidiController : public ofxMidiListener {
 public:
     ~MidiController();
@@ -45,6 +50,9 @@ public:
     int sentValues[24];
     float lastSendTime;
     std::atomic<bool> sendAllRequested;
+
+    // MilkDrop preset changes asked for over MIDI (+ next, - previous); ofApp takes them each frame
+    std::atomic<int> milkdropPresetSteps{0};
 
     // State manager
     shared_ptr<StateManager> stateManager;

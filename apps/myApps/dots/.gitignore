@@ -69,3 +69,6 @@ local.properties
 
 bin/*
 !bin/data/
+
+# MilkDrop presets and textures, fetched by scripts/build_projectm.sh
+bin/data/projectM/

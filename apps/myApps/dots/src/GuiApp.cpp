@@ -70,6 +70,18 @@ void GuiApp::setup() {
     metaParams.add(fadeFrames.set("fadeFrames", 100, 0, 200));
     metaGui.setup(metaParams);
 
+    // MilkDrop
+    milkdropParams.setName("MilkDrop");
+    milkdropParams.add(milkdropMix.set("mix", 0, 0, 1));
+    milkdropParams.add(milkdropPresetDuration.set("presetSeconds", 30, 5, 120));
+    milkdropParams.add(milkdropLockPreset.set("lockPreset", false));
+    milkdropParams.add(milkdropShuffle.set("shuffle", true));
+    milkdropGui.setup(milkdropParams);
+    milkdropGui.add(prevPresetBtn.setup("Prev preset  ["));
+    milkdropGui.add(nextPresetBtn.setup("Next preset  ]"));
+    prevPresetBtn.addListener(this, &GuiApp::prevPresetPressed);
+    nextPresetBtn.addListener(this, &GuiApp::nextPresetPressed);
+
     trackControlGui.setup("Tracks");
 
     trackControls.setup();
@@ -101,8 +113,14 @@ void GuiApp::setup() {
     trackParamsGui.setup(stateManager->activeTrack.displayParameters);
     colorSections(displayGui);
     colorSections(trackParamsGui);
+    int milkdropColor = twisterColorForSection("MilkDrop");
+    milkdropGui.setHeaderBackgroundColor(guiColorForTwister(milkdropColor, 110));
+    for (std::size_t i = 0; i < milkdropGui.getNumControls(); ++i) {
+        milkdropGui.getControl(i)->setFillColor(guiColorForTwister(milkdropColor, 170));
+    }
 
     inputGui.setPosition(10, 450);
+    milkdropGui.setPosition(inputGui.getPosition().x, inputGui.getPosition().y + inputGui.getHeight() + 10);
     debugGui.setPosition(inputGui.getPosition().x + inputGui.getWidth() + 10, inputGui.getPosition().y);
     metaGui.setPosition(debugGui.getPosition().x, debugGui.getPosition().y + debugGui.getHeight() + 10);
     trackParamsGui.setPosition(510, 75);
@@ -110,7 +128,7 @@ void GuiApp::setup() {
     displayGui.setPosition(trackControlGui.getPosition().x + trackControlGui.getWidth() + 10, 15);
 
 
-    float height = MAX(MAX(MAX(MAX(inputGui.getPosition().y + inputGui.getHeight(),
+    float height = MAX(MAX(MAX(MAX(milkdropGui.getPosition().y + milkdropGui.getHeight() + 20,
                        debugGui.getPosition().y + inputGui.getHeight()),
                        metaGui.getPosition().y + metaGui.getHeight()),
                        displayGui.getPosition().y + displayGui.getHeight()),
@@ -274,11 +292,26 @@ void GuiApp::draw() {
     ofPopMatrix();
 
     inputGui.draw();
+    milkdropGui.draw();
+    if (!milkdropPresetName.empty()) {
+        ofSetColor(255);
+        ofDrawBitmapString(milkdropPresetName.substr(0, 38),
+                           milkdropGui.getPosition().x, milkdropGui.getPosition().y + milkdropGui.getHeight() + 14);
+    }
     debugGui.draw();
     displayGui.draw();
     metaGui.draw();
     trackParamsGui.draw();
     trackControlGui.draw();
+}
+
+// ofApp owns projectM, so the buttons go through the same key queue as the keyboard
+void GuiApp::prevPresetPressed() {
+    keyPresses.push('[');
+}
+
+void GuiApp::nextPresetPressed() {
+    keyPresses.push(']');
 }
 
 void GuiApp::handleKey(int key) {

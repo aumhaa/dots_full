@@ -44,6 +44,10 @@ void ofApp::setup(){
     overallScale = 1;
     
     visualsFbo.allocate(ofGetWidth(), ofGetHeight(), GL_RGBA, 4);
+    outputFbo.allocate(ofGetWidth(), ofGetHeight(), GL_RGBA);
+
+    milkdropMix = 0;
+    projectM.setup(ofGetWidth(), ofGetHeight(), ofToDataPath("projectM", true));
 
     // cp and cp2 are pointers, set just below
     memset(&renderCp, 0, sizeof(flam3_genome));
@@ -157,7 +161,22 @@ void ofApp::setup(){
 void ofApp::guiUpdate() {
     // Copy data to gui
     gui->frameRate = ofGetFrameRate();
-    gui->visuals = &visualsFbo.getTexture();
+    gui->visuals = &outputFbo.getTexture();
+
+    milkdropMix = gui->milkdropMix;
+    gui->milkdropPresetName = projectM.getPresetName();
+    if (gui->milkdropPresetDuration != appliedPresetDuration) {
+        appliedPresetDuration = gui->milkdropPresetDuration;
+        projectM.setPresetDuration(appliedPresetDuration);
+    }
+    if (gui->milkdropLockPreset != appliedLockPreset) {
+        appliedLockPreset = gui->milkdropLockPreset;
+        projectM.setPresetLocked(appliedLockPreset);
+    }
+    if (gui->milkdropShuffle != appliedShuffle) {
+        appliedShuffle = gui->milkdropShuffle;
+        projectM.setShuffle(appliedShuffle);
+    }
     gui->mpx = mpx;
     gui->mpy = mpy;
     gui->audioCentroid = audioCentroid;
@@ -723,7 +742,12 @@ void ofApp::update(){
 
     stateManager->update();
     guiUpdate();
-    if (midi) midi->update();
+    if (midi) {
+        midi->update();
+        for (int steps = midi->milkdropPresetSteps.exchange(0); steps != 0; steps += (steps > 0 ? -1 : 1)) {
+            if (steps > 0) projectM.nextPreset(); else projectM.previousPreset();
+        }
+    }
 
     if (stateManager->wandering) {
         flameWander();
@@ -776,6 +800,9 @@ void ofApp::audioIn(ofSoundBuffer & buffer){
         audioRMS = newAudioRMS;
         smoothedAudioRMS += (audioRMS - smoothedAudioRMS) * 0.3;
     }
+
+    // MilkDrop hears the same signal as the flames (silence when there's no audio)
+    projectM.addSamples(audioInput, bufferSize);
 }
 
 bool pairCompareDesc(const pointPair& firstElem, pointPair& secondElem) {
@@ -867,10 +894,27 @@ void ofApp::draw(){
     ofClearAlpha();
     visualsFbo.end();
 
+    // MilkDrop only renders while it's in the mix
+    if (milkdropMix > 0) {
+        projectM.render();
+    }
+
+    // Crossfade: the flames, then MilkDrop over them at milkdropMix
+    outputFbo.begin();
+    ofClear(0, 255);
+    ofEnableAlphaBlending();
     ofSetColor(255);
     visualsFbo.draw(0, 0);
+    if (milkdropMix > 0) {
+        ofSetColor(255, 255 * milkdropMix);
+        projectM.getFbo().draw(0, 0, outputFbo.getWidth(), outputFbo.getHeight());
+    }
+    outputFbo.end();
 
-    syphonServer.publishTexture(&visualsFbo.getTexture());
+    ofSetColor(255);
+    outputFbo.draw(0, 0);
+
+    syphonServer.publishTexture(&outputFbo.getTexture());
 
 //    char str[25];
 //    sprintf(str, "%.2f fps", ofGetFrameRate());
@@ -912,6 +956,10 @@ void ofApp::handleKey(int key) {
         stateManager->mutateCurrent();
     } else if (cmdKeyDown && key == OF_KEY_DOWN) {
         stateManager->killCurrent();
+    } else if (key == '[') {
+        projectM.previousPreset();
+    } else if (key == ']') {
+        projectM.nextPreset();
     } else if (key == ',') {
         stateManager->regressTrack();
     } else if (key == '.') {
@@ -981,4 +1029,6 @@ void ofApp::mouseReleased(int x, int y, int button){
 //--------------------------------------------------------------
 void ofApp::windowResized(int w, int h){
     visualsFbo.allocate(w, h, GL_RGBA);
+    outputFbo.allocate(w, h, GL_RGBA);
+    projectM.resize(w, h);
 }

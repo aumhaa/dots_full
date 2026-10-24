@@ -7,6 +7,7 @@
 - Links libxml2, which flam3 parses genomes with.
 - Points the Syphon framework flags at the app's local addons/ofxSyphon; the
   generator writes them as if ofxSyphon were in the OF addons folder.
+- Adds libprojectM (libs/projectM, built by scripts/build_projectm.sh).
 
 Run from the app folder after every projectGenerator run:
 
@@ -21,6 +22,8 @@ EXCLUDE = {
 }
 SYPHON_FLAG = "/addons/ofxSyphon/libs/Syphon/lib/osx/"
 LOCAL_SYPHON_FLAG = "-Faddons/ofxSyphon/libs/Syphon/lib/osx/"
+PROJECTM_HEADERS = "libs/projectM/include"
+PROJECTM_LIBS = ["libs/projectM/lib/libprojectM-4-playlist.a", "libs/projectM/lib/libprojectM-4.a"]
 
 
 def fix_flags(flags):
@@ -58,7 +61,16 @@ def main(path):
         ldflags = fix_flags(settings["OTHER_LDFLAGS"])
         if "-lxml2" not in ldflags:
             ldflags.append("-lxml2")
+        for lib in PROJECTM_LIBS:
+            if lib not in ldflags:
+                ldflags.append(lib)
         settings["OTHER_LDFLAGS"] = ldflags
+        headers = settings.get("HEADER_SEARCH_PATHS", ["$(inherited)"])
+        if isinstance(headers, str):
+            headers = [headers]
+        if PROJECTM_HEADERS not in headers:
+            headers.append(PROJECTM_HEADERS)
+        settings["HEADER_SEARCH_PATHS"] = headers
         if "OTHER_CFLAGS" in settings:
             settings["OTHER_CFLAGS"] = fix_flags(settings["OTHER_CFLAGS"])
         n_configs += 1

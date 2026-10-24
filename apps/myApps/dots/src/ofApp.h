@@ -6,6 +6,7 @@
 #include "appConstants.h"
 #include "ofxSyphon.h"
 #include "StateManager.h"
+#include "ProjectMEngine.h"
 
 extern "C" {
 #include "flam3.h"
@@ -112,9 +113,16 @@ public:
     ofxFft *fft;
     float fftDecayRate;
 
+    // MilkDrop, mixed over the flames
+    ProjectMEngine projectM;
+    float milkdropMix;
+    float appliedPresetDuration = -1;   // GUI settings last passed to projectM
+    int appliedLockPreset = -1, appliedShuffle = -1;
+
     // The GUI window
     shared_ptr<GuiApp> gui;
-    ofFbo visualsFbo;
+    ofFbo visualsFbo;   // the flames, with their trails
+    ofFbo outputFbo;    // flames and MilkDrop mixed: what the window, the GUI and Syphon show
     shared_ptr<ofTexture> visuals;
     ofxSyphonServer syphonServer;
 

@@ -15,6 +15,24 @@ If you regenerate the project with the project generator, run
 it takes flam3's command-line tools out of the build, links libxml2, and fixes
 the Syphon framework path.
 
+### MilkDrop (projectM)
+
+dots can mix MilkDrop presets over the flames, through libprojectM. The
+library is built into `libs/projectM` and the presets and textures are fetched
+into `bin/data/projectM` (not in git) by:
+
+    sh scripts/build_projectm.sh
+
+(needs CMake: `brew install cmake`). projectM is pinned to a master commit,
+because drawing into our own framebuffer (`projectm_opengl_render_frame_fbo`)
+arrives in projectM 4.2, which isn't released yet.
+
+MilkDrop hears the same audio as the flames (not in MP3 mode) and only renders
+while its mix is above 0. The control window's MilkDrop panel has the mix,
+seconds per preset, lock and shuffle, and previous/next preset (also `[` and
+`]`). Over MIDI: CC 21 on channel 1 is the mix (sent back on DotsOutput like
+the other parameters), notes 5 and 6 on channel 1 are previous/next preset.
+
 ### MIDI and the Twister
 
 dots opens two virtual MIDI ports. `DotsInput` takes CC 0-20 on channel 1

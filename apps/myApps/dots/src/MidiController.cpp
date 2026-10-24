@@ -72,6 +72,7 @@ void MidiController::add_listeners() {
         {18, &scene.audioEffectSize2,                 twisterColorForSection("Audio Effects")},
         {19, &scene.audioEffectSize3,                 twisterColorForSection("Audio Effects")},
         {20, &scene.audioEffectSize4,                 twisterColorForSection("Audio Effects")},
+        {DOTS_CC_MILKDROP_MIX, &gui->milkdropMix,     twisterColorForSection("MilkDrop")},
     };
     for (int i = 0; i < 24; ++i) {
         sentValues[i] = -1;
@@ -120,7 +121,13 @@ void MidiController::update() {
 
 void MidiController::newMidiMessage(ofxMidiMessage& msg) {
 //    cout << "Rcv midi: " + std::to_string(msg.status) + " " + std::to_string(msg.channel) + " " + std::to_string(msg.control) + " " + std::to_string(msg.pitch) << endl;
-    if (msg.status == 176 && msg.channel == 1 && msg.control >= 0 && msg.control < 24) {
+    if (msg.status == 176 && msg.channel == 1 && msg.control == DOTS_CC_MILKDROP_MIX) {
+        gui->milkdropMix.set(msg.value / 127.0f);
+    } else if (msg.status == 144 && msg.channel == 1 && msg.pitch == DOTS_NOTE_PREV_PRESET && msg.velocity > 0) {
+        milkdropPresetSteps--;
+    } else if (msg.status == 144 && msg.channel == 1 && msg.pitch == DOTS_NOTE_NEXT_PRESET && msg.velocity > 0) {
+        milkdropPresetSteps++;
+    } else if (msg.status == 176 && msg.channel == 1 && msg.control >= 0 && msg.control < 24) {
         sliders[msg.control] = (float)msg.value/127.0;
         stateManager->controllerToSceneParams(msg.control, sliders[msg.control]);
     } else if (msg.status == 176 && msg.channel == 1 && msg.control == DOTS_CC_SEND_ALL) {

@@ -41,6 +41,16 @@ public:
     ofParameter<bool> wandering;
     ofParameter<int> fadeFrames;
 
+    // MilkDrop (projectM), mixed over the flames
+    ofParameterGroup milkdropParams;
+    ofParameter<float> milkdropMix, milkdropPresetDuration;
+    ofParameter<bool> milkdropLockPreset, milkdropShuffle;
+    ofxPanel milkdropGui;
+    ofxButton prevPresetBtn, nextPresetBtn;
+    void prevPresetPressed();
+    void nextPresetPressed();
+    string milkdropPresetName;   // mirrored from ofApp
+
     ofxPanel trackControlGui;
     ofxGuiGroup trackControls;
     ofxButton prevTrackBtn, nextTrackBtn;
