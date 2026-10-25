@@ -205,6 +205,10 @@ library's MIDI tab.
   white; press a pad to load it. In **lights** mode the grid is the picture:
   press a pad to move the selected light there; the four buttons above the
   grid's left half pick which light, and each light shows as its letter.
+- **Switches**: a dial page's on/off settings and triggers (the flames locks
+  and wandering, MilkDrop's lock, shuffle and hard cuts, a shader's toggles and
+  bangs) sit on the row of buttons under the dials, lit while on, instead of
+  on dials; a shader takes as many pages as its dials or switches need.
 - **Arrows** (right strip): up/down step through the mode's dial pages,
   left/right page the grid; each dims when it can't go further. The button
   over the last key shows the dial page ("Flames 1/2"), the last key the grid's

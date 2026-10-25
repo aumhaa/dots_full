@@ -50,9 +50,10 @@ static const int MIXER_NOTE = 15, FIRST_MODE_NOTE = 33, MODUL8_NOTE = 41;
 static const int UP_NOTE = 70, LEFT_NOTE = 71, RIGHT_NOTE = 72, DOWN_NOTE = 73;
 // Left column: the engine on each side of the mixer (a press steps it), and the crossfader dial
 static const int ENGINE_A_NOTE = 11, ENGINE_B_NOTE = 32, CROSSFADE_CC = 17, SPARE_CC = 16;
-// The two rows above the grid (100-115): Modul8's 16 buttons in its mode. Otherwise the dial page
-// (over the last key) and the grid's page (the last key); in lights mode the first four keys pick the
-// light the grid moves, in sets mode the first two step through the set; the rest blank
+// The two rows above the grid (100-115): Modul8's 16 buttons in its mode. Otherwise the dial page's
+// switches (100-106), lit while on, the dial page (over the last key) and the grid's page (the last
+// key); in lights mode the first four keys pick the light the grid moves, in sets mode the first two
+// step through the set; the rest blank
 static const int FIRST_ROW_NOTE = 100, DIAL_PAGE_NOTE = 107, GRID_PAGE_NOTE = 115, FIRST_KEY = 108;
 // Shown blank: Live's labels would otherwise stay on it
 static const int BLANK_NOTES[] = {40};
@@ -399,6 +400,13 @@ void ModGridSurface::press(int note) {
         selectMode(MODE_MODUL8);
         return;
     }
+    // A switch on the dial page: a bool flips, a trigger fires
+    int switchIndex = note - FIRST_ROW_NOTE;
+    if (mode != MODE_MODUL8 && switchIndex >= 0 && switchIndex < ControlPage::SWITCHES_PER_PAGE) {
+        const vector<ControlEntry> &switches = pages.get()[currentPage()].switches;
+        if (switchIndex < (int)switches.size()) switches[switchIndex].setNormalized(switches[switchIndex].normalized() >= 0.5f ? 0 : 1);
+        return;
+    }
     if (mode == MODE_LIGHTS && note >= FIRST_KEY && note < FIRST_KEY + LIGHTING_N_LIGHTS) {
         lighting.selected = note - FIRST_KEY + 1;
         return;
@@ -602,6 +610,10 @@ void ModGridSurface::sendFeedback() {
             color = button.name.empty() && !button.value ? COLOR_OFF : button.value ? twisterColor(button.value) : sectionColor("Modul8", false);
             std::size_t bar = button.name.find('|');
             text = bar == string::npos ? button.name : button.state ? button.name.substr(bar + 1) : button.name.substr(0, bar);
+        } else if (current && note - FIRST_ROW_NOTE < (int)current->switches.size()) {
+            const ControlEntry &entry = current->switches[note - FIRST_ROW_NOTE];
+            color = sectionColor(entry.section, entry.normalized() >= 0.5f);
+            text = entry.label;
         } else if (note == DIAL_PAGE_NOTE && current) {
             color = sectionColor(current->section, true);
             text = all[shownPages.front()].name + " " + ofToString(position + 1) + "/" + ofToString(positions);

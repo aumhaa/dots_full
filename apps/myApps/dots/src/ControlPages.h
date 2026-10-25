@@ -24,12 +24,15 @@ struct ControlEntry {
     float normalized() const;            // 0-1 across its range
     void setNormalized(float t) const;   // a bool is on from 0.5; a trigger fires from 0.5
     string valueText() const;
+    bool isSwitch() const;               // a bool or a trigger: a button rather than a dial
 };
 
 struct ControlPage {
     string group;   // a mode's pages (flames, milk, shader, lights, sets) or the mixer's, stepped through in order
     string name, section;
-    vector<ControlEntry> entries;   // at most 16
+    vector<ControlEntry> entries;   // the dials, at most 16
+    vector<ControlEntry> switches;  // bools and triggers, on buttons: at most SWITCHES_PER_PAGE
+    static const int SWITCHES_PER_PAGE = 7;
 };
 
 class ControlPages {

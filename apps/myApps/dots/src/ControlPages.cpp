@@ -77,6 +77,10 @@ string ControlEntry::valueText() const {
     return "";
 }
 
+bool ControlEntry::isSwitch() const {
+    return param && component < 0 && (IS(param, bool) || IS(param, void));
+}
+
 void ControlPages::setup(ofApp *dots) {
     app = dots;
     build();
@@ -183,12 +187,16 @@ void ControlPages::build() {
         {"crossfade A-B", "Mixer", &gui.crossfade},
     }});
 
-    // The shader's inputs, 16 to a page, as many pages as they take
-    vector<ControlEntry> inputs;
+    // The shader's inputs, as many pages as they take: 16 dials and 7 switches to a page
+    vector<ControlEntry> inputs, dials, switches;
     addShaderInputs(app->shaderEngine->getShader().parameters, inputs);
-    for (std::size_t first = 0; first < std::max<std::size_t>(inputs.size(), 1); first += 16) {
-        ControlPage page{"shader", first == 0 ? "Shader" : "Shader " + ofToString(first / 16 + 1), "Shader", {}};
-        for (std::size_t i = first; i < inputs.size() && i < first + 16; ++i) page.entries.push_back(inputs[i]);
+    for (const ControlEntry &input : inputs) (input.isSwitch() ? switches : dials).push_back(input);
+    const std::size_t perPage = ControlPage::SWITCHES_PER_PAGE;
+    std::size_t count = std::max({(dials.size() + 15) / 16, (switches.size() + perPage - 1) / perPage, (std::size_t)1});
+    for (std::size_t n = 0; n < count; ++n) {
+        ControlPage page{"shader", n == 0 ? "Shader" : "Shader " + ofToString(n + 1), "Shader", {}};
+        for (std::size_t i = n * 16; i < dials.size() && i < n * 16 + 16; ++i) page.entries.push_back(dials[i]);
+        for (std::size_t i = n * perPage; i < switches.size() && i < (n + 1) * perPage; ++i) page.switches.push_back(switches[i]);
         pages.push_back(page);
     }
     pages.push_back({"shader", "Shader set", "Shader", {
@@ -219,4 +227,16 @@ void ControlPages::build() {
     }
     pages.push_back(lights);
     pages.push_back(lights2);
+
+    // Every page's bools and triggers go on its buttons, as many as there are buttons for
+    for (ControlPage &page : pages) {
+        for (auto entry = page.entries.begin(); entry != page.entries.end();) {
+            if (entry->isSwitch() && (int)page.switches.size() < ControlPage::SWITCHES_PER_PAGE) {
+                page.switches.push_back(*entry);
+                entry = page.entries.erase(entry);
+            } else {
+                ++entry;
+            }
+        }
+    }
 }
