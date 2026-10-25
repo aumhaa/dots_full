@@ -76,7 +76,6 @@ void GuiApp::setup() {
     // MilkDrop
     milkdropParams.setName("MilkDrop");
     milkdropParams.add(milkdropRunning.set("running", true));
-    milkdropParams.add(milkdropMix.set("mix", 0, 0, 1));
     milkdropParams.add(milkdropPresetDuration.set("presetSeconds", 30, 5, 120));
     milkdropParams.add(milkdropLockPreset.set("lockPreset", false));
     milkdropParams.add(milkdropShuffle.set("shuffle", true));
@@ -123,6 +122,28 @@ void GuiApp::setup() {
         milkdropGui.getControl(i)->setFillColor(guiColorForTwister(milkdropColor, 170));
     }
 
+    // Mixer
+    mixerParams.setName("Mixer");
+    mixerParams.add(engineA.set("A (flames/milk/shader)", ENGINE_FLAMES, ENGINE_FLAMES, ENGINE_SHADER));
+    mixerParams.add(engineB.set("B (flames/milk/shader)", ENGINE_MILKDROP, ENGINE_FLAMES, ENGINE_SHADER));
+    mixerParams.add(crossfade.set("crossfade A-B", 0, 0, 1));
+    mixerGui.setup(mixerParams);
+
+    // Shader engine
+    shaderParams.setName("Shader");
+    shaderParams.add(shaderRunning.set("running", true));
+    shaderParams.add(shaderAnimatedOnly.set("animated only", true));
+    shaderGui.setup(shaderParams);
+    shaderGui.add(prevShaderBtn.setup("Prev shader  <"));
+    shaderGui.add(nextShaderBtn.setup("Next shader  >"));
+    prevShaderBtn.addListener(this, &GuiApp::prevShaderPressed);
+    nextShaderBtn.addListener(this, &GuiApp::nextShaderPressed);
+    int shaderColor = twisterColorForSection("Shader");
+    shaderGui.setHeaderBackgroundColor(guiColorForTwister(shaderColor, 110));
+    for (std::size_t i = 0; i < shaderGui.getNumControls(); ++i) {
+        shaderGui.getControl(i)->setFillColor(guiColorForTwister(shaderColor, 170));
+    }
+
     // Spotlights: one panel, lights 2-4 folded until needed
     lightsGui.setup(lighting->parameters);
     lightsGui.add(saveLightsBtn.setup("Save snapshot"));
@@ -153,6 +174,8 @@ void GuiApp::setup() {
     trackControlGui.setPosition(trackParamsGui.getPosition().x, trackParamsGui.getPosition().y + trackParamsGui.getHeight() + 10);
     displayGui.setPosition(trackControlGui.getPosition().x + trackControlGui.getWidth() + 10, 15);
     lightsGui.setPosition(displayGui.getPosition().x + displayGui.getWidth() + 10, 15);
+    mixerGui.setPosition(metaGui.getPosition().x, metaGui.getPosition().y + metaGui.getHeight() + 10);
+    shaderGui.setPosition(lightsGui.getPosition().x + lightsGui.getWidth() + 10, 15);
 
 
     float height = MAX(MAX(MAX(MAX(milkdropGui.getPosition().y + milkdropGui.getHeight() + 20,
@@ -163,7 +186,9 @@ void GuiApp::setup() {
     // Room for the lights panel with one light open
     height = MAX(height, lightsGui.getPosition().y + lightsGui.getHeight() + 150);
 
-    ofSetWindowShape(lightsGui.getPosition().x + lightsGui.getWidth() + 10,
+    height = MAX(height, mixerGui.getPosition().y + mixerGui.getHeight());
+
+    ofSetWindowShape(shaderGui.getPosition().x + shaderGui.getWidth() + 10,
                      height + 10);
 
     visuals = NULL;
@@ -179,6 +204,18 @@ void GuiApp::setup() {
 }
 
 void GuiApp::update(){
+    // A new (or reloaded) shader: a fresh panel of its inputs
+    if (shaderEngine->parametersVersion != shownShaderVersion) {
+        shownShaderVersion = shaderEngine->parametersVersion;
+        shaderInputsGui.setup(shaderEngine->getShader().parameters);
+        shaderInputsGui.setPosition(shaderGui.getPosition().x, shaderGui.getPosition().y + shaderGui.getHeight() + 50);
+        int shaderColor = twisterColorForSection("Shader");
+        shaderInputsGui.setHeaderBackgroundColor(guiColorForTwister(shaderColor, 110));
+        for (std::size_t i = 0; i < shaderInputsGui.getNumControls(); ++i) {
+            shaderInputsGui.getControl(i)->setFillColor(guiColorForTwister(shaderColor, 170));
+        }
+    }
+
     if (ofGetFrameNum() % 30 == 0) {
         // Every 30 frames, refresh some data...
         ofSoundStream ss;
@@ -343,6 +380,18 @@ void GuiApp::draw() {
 
     inputGui.draw();
     lightsGui.draw();
+    mixerGui.draw();
+    shaderGui.draw();
+    ofSetColor(255);
+    float statusY = shaderGui.getPosition().y + shaderGui.getHeight() + 14;
+    // The shader's number and name, over two lines if needed
+    string status = shaderEngine->getStatus();
+    ofDrawBitmapString(status.substr(0, 26), shaderGui.getPosition().x, statusY);
+    if (status.size() > 26) {
+        ofDrawBitmapString(status.substr(26, 26), shaderGui.getPosition().x, statusY + 14);
+    }
+    if (shaderPaused) ofDrawBitmapString("shader paused", shaderGui.getPosition().x, statusY + 28);
+    shaderInputsGui.draw();
     milkdropGui.draw();
     if (!milkdropPresetName.empty()) {
         ofSetColor(255);
@@ -354,6 +403,14 @@ void GuiApp::draw() {
     metaGui.draw();
     trackParamsGui.draw();
     trackControlGui.draw();
+}
+
+void GuiApp::prevShaderPressed() {
+    keyPresses.push('<');
+}
+
+void GuiApp::nextShaderPressed() {
+    keyPresses.push('>');
 }
 
 void GuiApp::exit() {

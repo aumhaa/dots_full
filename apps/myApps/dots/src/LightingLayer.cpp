@@ -77,7 +77,7 @@ void LightingLayer::setup() {
     parameters.add(selected.set("selected", 1, 1, LIGHTING_N_LIGHTS));
     parameters.add(snapshot.set("snapshot", 1, 1, 8));
     parameters.add(feedAIncludesLights.set("lights on feed A", true));
-    parameters.add(feedBSource.set("feed B (flames/milk/light)", LIGHTING_FEED_B_LIGHT, LIGHTING_FEED_B_FLAMES, LIGHTING_FEED_B_LIGHT));
+    parameters.add(feedBSource.set("feed B (flames/milk/light/shader)", LIGHTING_FEED_B_LIGHT, LIGHTING_FEED_B_FLAMES, LIGHTING_FEED_B_SHADER));
 
     for (int i = 0; i < LIGHTING_N_LIGHTS; ++i) {
         Light &light = lights[i];
@@ -124,7 +124,7 @@ ofFbo &LightingLayer::apply(ofFbo &source) {
     return result;
 }
 
-ofFbo &LightingLayer::renderFeedB(ofFbo &flames, ofFbo &milkdrop) {
+ofFbo &LightingLayer::renderFeedB(ofFbo &flames, ofFbo &milkdrop, ofFbo &shaderOut) {
     allocateLike(feedB, flames);
     if (!anyOn()) {
         // Nothing lit: black, cleared once
@@ -140,7 +140,9 @@ ofFbo &LightingLayer::renderFeedB(ofFbo &flames, ofFbo &milkdrop) {
     if (feedBSource == LIGHTING_FEED_B_LIGHT) {
         render(flames, feedB, OUTPUT_LIGHT);
     } else {
-        render(feedBSource == LIGHTING_FEED_B_MILKDROP ? milkdrop : flames, feedB, OUTPUT_MASKED);
+        ofFbo &source = feedBSource == LIGHTING_FEED_B_MILKDROP ? milkdrop
+                      : feedBSource == LIGHTING_FEED_B_SHADER ? shaderOut : flames;
+        render(source, feedB, OUTPUT_MASKED);
     }
     return feedB;
 }
@@ -151,6 +153,10 @@ bool LightingLayer::feedBUsesMilkDrop() {
 
 bool LightingLayer::feedBUsesFlames() {
     return feedBSource == LIGHTING_FEED_B_FLAMES && anyOn();
+}
+
+bool LightingLayer::feedBUsesShader() {
+    return feedBSource == LIGHTING_FEED_B_SHADER && anyOn();
 }
 
 void LightingLayer::render(ofFbo &source, ofFbo &target, int outputMode) {

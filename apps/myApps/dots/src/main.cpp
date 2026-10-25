@@ -30,15 +30,18 @@ int main( ){
 
     shared_ptr<LightingLayer> lighting(new LightingLayer());
     lighting->setup();
+    shared_ptr<ShaderEngine> shaderEngine(new ShaderEngine());   // set up by ofApp, in its GL context
 
     shared_ptr<GuiApp> guiApp(new GuiApp());
     guiApp->stateManager = stateManager;
     guiApp->lighting = lighting;
+    guiApp->shaderEngine = shaderEngine;
 
     shared_ptr<ofApp> mainApp(new ofApp());
     mainApp->gui = guiApp;
     mainApp->stateManager = stateManager;
     mainApp->lighting = lighting;
+    mainApp->shaderEngine = shaderEngine;
 
     shared_ptr<MidiController> midi(new MidiController());
     midi->setup();

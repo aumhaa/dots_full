@@ -15,9 +15,17 @@ If you regenerate the project with the project generator, run
 it takes flam3's command-line tools out of the build, links libxml2, and fixes
 the Syphon framework path.
 
+### Engines and the mixer
+
+dots has three engines: the flames, MilkDrop and the ISF shader engine. The
+Mixer panel puts one on A and one on B (0 flames, 1 MilkDrop, 2 shader; CC 27
+and CC 28) with a crossfade between them (CC 21). An engine only works while
+it's running and something shows it (the mixer, the lights' feed B, or for
+the shader its own Syphon feed); otherwise it holds its last frame.
+
 ### MilkDrop (projectM)
 
-dots can mix MilkDrop presets over the flames, through libprojectM. The
+dots runs MilkDrop presets through libprojectM. The
 library is built into `libs/projectM` and the presets and textures are fetched
 into `bin/data/projectM` (not in git) by:
 
@@ -27,18 +35,29 @@ into `bin/data/projectM` (not in git) by:
 because drawing into our own framebuffer (`projectm_opengl_render_frame_fbo`)
 arrives in projectM 4.2, which isn't released yet.
 
-MilkDrop hears the same audio as the flames (not in MP3 mode) and only renders
-while its mix is above 0. The control window's MilkDrop panel has the mix,
-seconds per preset, lock and shuffle, and previous/next preset (also `[` and
-`]`). Over MIDI: CC 21 on channel 1 is the mix (sent back on DotsOutput like
-the other parameters), notes 5 and 6 on channel 1 are previous/next preset.
+MilkDrop hears the same audio as the flames (not in MP3 mode). The control
+window's MilkDrop panel has running, seconds per preset, lock and shuffle, and
+previous/next preset (also `[` and `]`, and notes 5 and 6 on channel 1).
+
+### Shaders (ISF)
+
+The shader engine runs ISF generators from `/Library/Graphics/ISF`,
+`~/Library/Graphics/ISF` and `bin/data/shaders`: single-pass shaders that make
+their own picture. By default only the ones that animate by themselves are
+offered; turn off "animated only" in the Shader panel to add the static
+patterns. Filters, transitions and multi-pass shaders aren't run yet.
+
+The Shader panel has running (CC 29) and previous/next shader (`<` and `>`,
+notes 7 and 8); the shader's own inputs get a panel of their own, rebuilt for
+each shader. A shader reloads when its file changes, so it can be edited live.
+Its output is also published on its own Syphon feed, "dots shader".
 
 ### Pausing the engines
 
-"flames running" (Meta panel, CC 25) and MilkDrop's "running" (CC 26) stop an
-engine's processing; it holds its last frame. The flames also pause by
-themselves while MilkDrop's mix is at 100%, unless feed B is showing them, and
-the control window says "flames paused". "max fps" (Meta panel, 30 by default)
+"flames running" (Meta panel, CC 25), MilkDrop's "running" (CC 26) and the
+shader's (CC 29) stop an engine's processing; it holds its last frame. Engines
+nothing shows pause by themselves (see the mixer), and the control window says
+"flames paused" / "shader paused". "max fps" (Meta panel, 30 by default)
 caps the frame rate, so a paused engine frees the CPU rather than speeding the
 loop up: the flames are about 85% of a core, MilkDrop about 5%.
 
@@ -65,9 +84,10 @@ above.
 - **dots**: the final picture, with or without the lights (the Lights panel's
   "lights on feed A").
 - **dots B**: a top layer with alpha (the amount of light, colour not
-  premultiplied): the flames masked by the light, MilkDrop masked by the light
-  (MilkDrop keeps rendering for it even at mix 0), or the light alone. Fully
+  premultiplied): the flames, MilkDrop or the shader masked by the light
+  (whichever it shows keeps rendering for it), or the light alone. Fully
   transparent where no light falls.
+- **dots shader**: the shader engine's own output.
 
 The viewer window starts hidden and its close button only hides it; dots
 keeps rendering for the preview and Syphon. Show it with "show viewer (v)" in

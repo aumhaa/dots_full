@@ -20,6 +20,8 @@ class ofxSyphonServer {
 	void publishScreen();
     void publishTexture(ofTexture* inputTexture);
     void publishTexture(GLuint id, GLenum target, GLsizei width, GLsizei height, bool isFlipped);
+    // dots: whether any Syphon client is receiving this server (false before the first publish)
+    bool hasClients();
 	protected:
 	ofxSyphonNSObject mSyphon;
 };

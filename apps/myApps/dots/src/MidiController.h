@@ -17,10 +17,17 @@
 // CC (channel 1) that asks dots to send all its values and section colours
 #define DOTS_CC_SEND_ALL 127
 
-// MilkDrop: mix over the flames (CC, channel 1), previous/next preset (notes, channel 1)
-#define DOTS_CC_MILKDROP_MIX 21
+// Mixer crossfade A-B (CC), MilkDrop previous/next preset (notes), all channel 1
+#define DOTS_CC_CROSSFADE 21
 #define DOTS_NOTE_PREV_PRESET 5
 #define DOTS_NOTE_NEXT_PRESET 6
+
+// Mixer engines on A and B (0-2 across the range), shader running, previous/next shader
+#define DOTS_CC_ENGINE_A 27
+#define DOTS_CC_ENGINE_B 28
+#define DOTS_CC_SHADER_RUNNING 29
+#define DOTS_NOTE_PREV_SHADER 7
+#define DOTS_NOTE_NEXT_SHADER 8
 
 // Spotlights: ambient, then 10 CCs per light from DOTS_CC_LIGHTS (on, mode,
 // intensity, hue, saturation, x, y, size, focus, frost), all channel 1
@@ -64,6 +71,7 @@ public:
 
     // MilkDrop preset changes asked for over MIDI (+ next, - previous); ofApp takes them each frame
     std::atomic<int> milkdropPresetSteps{0};
+    std::atomic<int> shaderSteps{0};
 
     // State manager
     shared_ptr<StateManager> stateManager;

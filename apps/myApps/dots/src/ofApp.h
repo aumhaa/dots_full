@@ -8,6 +8,7 @@
 #include "StateManager.h"
 #include "ProjectMEngine.h"
 #include "LightingLayer.h"
+#include "ShaderEngine.h"
 
 extern "C" {
 #include "flam3.h"
@@ -120,7 +121,16 @@ public:
 
     // MilkDrop, mixed over the flames
     ProjectMEngine projectM;
-    float milkdropMix;
+    float crossfade;   // mixer: 0 all A, 1 all B
+
+    // ISF shaders, shared with the GUI
+    shared_ptr<ShaderEngine> shaderEngine;
+    ofxSyphonServer shaderSyphonServer;   // "dots shader": the shader engine's own output
+
+    // Which engines work this frame, and each engine's picture
+    bool milkdropActive = false, shaderActive = false;
+    bool shaderAnimatedOnly = true;
+    ofFbo &engineFbo(int engine);
     float appliedPresetDuration = -1;   // GUI settings last passed to projectM
     int appliedLockPreset = -1, appliedShuffle = -1;
 

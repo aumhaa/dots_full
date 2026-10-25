@@ -7,6 +7,7 @@
 //#include "MidiController.h"
 #include "StateManager.h"
 #include "LightingLayer.h"
+#include "ShaderEngine.h"
 
 class ReplaceablePanel : public ofxPanel {
 public:
@@ -51,7 +52,7 @@ public:
 
     // MilkDrop (projectM), mixed over the flames
     ofParameterGroup milkdropParams;
-    ofParameter<float> milkdropMix, milkdropPresetDuration;
+    ofParameter<float> milkdropPresetDuration;
     ofParameter<bool> milkdropLockPreset, milkdropShuffle;
     ofParameter<bool> milkdropRunning;  // off: MilkDrop stops rendering and holds its last frame
     ofxPanel milkdropGui;
@@ -59,6 +60,23 @@ public:
     void prevPresetPressed();
     void nextPresetPressed();
     string milkdropPresetName;   // mirrored from ofApp
+
+    // Mixer: an engine on each of A and B, and a crossfade between them
+    ofParameterGroup mixerParams;
+    ofParameter<float> crossfade;          // 0 all A, 1 all B
+    ofParameter<int> engineA, engineB;     // ENGINE_FLAMES, ENGINE_MILKDROP or ENGINE_SHADER
+    ofxPanel mixerGui;
+    bool milkdropPaused = false, shaderPaused = false;   // mirrored from ofApp
+
+    // Shader engine: ISF generators; its inputs panel is rebuilt when the shader changes
+    shared_ptr<ShaderEngine> shaderEngine;
+    ofParameterGroup shaderParams;
+    ofParameter<bool> shaderRunning, shaderAnimatedOnly;
+    ofxPanel shaderGui, shaderInputsGui;
+    ofxButton prevShaderBtn, nextShaderBtn;
+    void prevShaderPressed();
+    void nextShaderPressed();
+    int shownShaderVersion = -1;
 
     // Spotlights: a panel, plus dragging them on the preview
     shared_ptr<LightingLayer> lighting;

@@ -20,4 +20,9 @@
 
 #define NUM_MOTION_IDS 36
 
+// Engines the mixer's A and B channels can show
+#define ENGINE_FLAMES 0
+#define ENGINE_MILKDROP 1
+#define ENGINE_SHADER 2
+
 #endif /* appConstants_h */

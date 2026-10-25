@@ -61,7 +61,9 @@ void ofApp::setup(){
     visualsFbo.allocate(ofGetWidth(), ofGetHeight(), GL_RGBA, 4);
     outputFbo.allocate(ofGetWidth(), ofGetHeight(), GL_RGBA);
 
-    milkdropMix = 0;
+    crossfade = 0;
+    shaderEngine->setup(ofGetWidth(), ofGetHeight());
+    shaderSyphonServer.setName("dots shader");
     projectM.setup(ofGetWidth(), ofGetHeight(), ofToDataPath("projectM", true));
 
     // cp and cp2 are pointers, set just below
@@ -191,7 +193,7 @@ void ofApp::guiUpdate() {
         gui->showViewer = viewerVisible;
     }
 
-    milkdropMix = gui->milkdropMix;
+    crossfade = gui->crossfade;
     gui->milkdropPresetName = projectM.getPresetName();
     if (gui->milkdropPresetDuration != appliedPresetDuration) {
         appliedPresetDuration = gui->milkdropPresetDuration;
@@ -775,13 +777,35 @@ void ofApp::update(){
         for (int steps = midi->milkdropPresetSteps.exchange(0); steps != 0; steps += (steps > 0 ? -1 : 1)) {
             if (steps > 0) projectM.nextPreset(); else projectM.previousPreset();
         }
+        for (int steps = midi->shaderSteps.exchange(0); steps != 0; steps += (steps > 0 ? -1 : 1)) {
+            if (steps > 0) shaderEngine->next(); else shaderEngine->previous();
+        }
     }
 
-    // Paused flames skip all their work and keep their last frame. They also
-    // pause themselves while MilkDrop fills the mix, unless feed B shows them.
-    bool flamesHidden = milkdropMix >= 0.999 && !lighting->feedBUsesFlames();
-    flamesActive = gui->flamesRunning && !flamesHidden;
+    // Each engine works only while it's running and something shows it: the
+    // mixer (A below full crossfade, B above zero), the lights' feed B, or for
+    // the shader its own Syphon feed. Otherwise it holds its last frame.
+    int engineA = gui->engineA, engineB = gui->engineB;
+    auto inMix = [&](int engine) {
+        return (engineA == engine && crossfade < 0.999) || (engineB == engine && crossfade > 0.001);
+    };
+    flamesActive = gui->flamesRunning && (inMix(ENGINE_FLAMES) || lighting->feedBUsesFlames());
+    milkdropActive = gui->milkdropRunning && (inMix(ENGINE_MILKDROP) || lighting->feedBUsesMilkDrop());
+    shaderActive = gui->shaderRunning && (inMix(ENGINE_SHADER) || lighting->feedBUsesShader() || shaderSyphonServer.hasClients());
     gui->flamesPaused = !flamesActive;
+    gui->milkdropPaused = !milkdropActive;
+    gui->shaderPaused = !shaderActive;
+
+    if (gui->shaderAnimatedOnly != shaderAnimatedOnly) {
+        shaderAnimatedOnly = gui->shaderAnimatedOnly;
+        shaderEngine->setAnimatedOnly(shaderAnimatedOnly);
+    }
+
+    // Shaders reload when their file changes
+    if (ofGetFrameNum() % 30 == 0) {
+        shaderEngine->checkForChanges();
+    }
+
     if (flamesActive) {
         if (stateManager->wandering) {
             flameWander();
@@ -937,20 +961,23 @@ void ofApp::draw(){
         drawFlames();
     }
 
-    // MilkDrop only renders while it's running and in the mix, or feed B shows it
-    if (gui->milkdropRunning && (milkdropMix > 0 || lighting->feedBUsesMilkDrop())) {
+    if (milkdropActive) {
         projectM.render();
     }
+    if (shaderActive) {
+        shaderEngine->render();
+    }
 
-    // Crossfade: the flames, then MilkDrop over them at milkdropMix
+    // Mixer: A, then B over it at the crossfade
+    int engineA = gui->engineA, engineB = gui->engineB;
     outputFbo.begin();
     ofClear(0, 255);
     ofEnableAlphaBlending();
     ofSetColor(255);
-    visualsFbo.draw(0, 0);
-    if (milkdropMix > 0) {
-        ofSetColor(255, 255 * milkdropMix);
-        projectM.getFbo().draw(0, 0, outputFbo.getWidth(), outputFbo.getHeight());
+    engineFbo(engineA).draw(0, 0, outputFbo.getWidth(), outputFbo.getHeight());
+    if (engineB != engineA && crossfade > 0) {
+        ofSetColor(255, 255 * crossfade);
+        engineFbo(engineB).draw(0, 0, outputFbo.getWidth(), outputFbo.getHeight());
     }
     outputFbo.end();
 
@@ -965,7 +992,8 @@ void ofApp::draw(){
     // context, which only sees our drawing once it has been flushed
     glFlush();
     syphonServer.publishTexture(&finalFbo.getTexture());
-    feedBSyphonServer.publishTexture(&lighting->renderFeedB(visualsFbo, projectM.getFbo()).getTexture());
+    shaderSyphonServer.publishTexture(&shaderEngine->getFbo().getTexture());
+    feedBSyphonServer.publishTexture(&lighting->renderFeedB(visualsFbo, projectM.getFbo(), shaderEngine->getFbo()).getTexture());
 
 //    char str[25];
 //    sprintf(str, "%.2f fps", ofGetFrameRate());
@@ -1009,6 +1037,10 @@ void ofApp::handleKey(int key) {
         stateManager->killCurrent();
     } else if (key == 'v') {
         gui->showViewer = !gui->showViewer;
+    } else if (key == '<') {
+        shaderEngine->previous();
+    } else if (key == '>') {
+        shaderEngine->next();
     } else if (key == '[') {
         projectM.previousPreset();
     } else if (key == ']') {
@@ -1084,4 +1116,11 @@ void ofApp::windowResized(int w, int h){
     visualsFbo.allocate(w, h, GL_RGBA);
     outputFbo.allocate(w, h, GL_RGBA);
     projectM.resize(w, h);
+    shaderEngine->resize(w, h);
+}
+
+ofFbo &ofApp::engineFbo(int engine) {
+    if (engine == ENGINE_MILKDROP) return projectM.getFbo();
+    if (engine == ENGINE_SHADER) return shaderEngine->getFbo();
+    return visualsFbo;
 }

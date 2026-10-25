@@ -101,3 +101,10 @@ void ofxSyphonServer::publishTexture(GLuint id, GLenum target, GLsizei width, GL
         [(SyphonOpenGLServer *)ofxSNOGet(mSyphon) publishFrameTexture:id textureTarget:target imageRegion:NSMakeRect(0, 0, width, height) textureDimensions:NSMakeSize(width, height) flipped:!isFlipped];
     }
 }
+
+// dots
+bool ofxSyphonServer::hasClients()
+{
+    if (!ofxSNOGet(mSyphon)) return false;
+    return [(SyphonOpenGLServer *)ofxSNOGet(mSyphon) hasClients];
+}

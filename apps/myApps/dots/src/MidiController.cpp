@@ -72,7 +72,10 @@ void MidiController::add_listeners() {
         {18, &scene.audioEffectSize2,                 twisterColorForSection("Audio Effects")},
         {19, &scene.audioEffectSize3,                 twisterColorForSection("Audio Effects")},
         {20, &scene.audioEffectSize4,                 twisterColorForSection("Audio Effects")},
-        {DOTS_CC_MILKDROP_MIX, &gui->milkdropMix,     twisterColorForSection("MilkDrop")},
+        {DOTS_CC_CROSSFADE, &gui->crossfade,          twisterColorForSection("MilkDrop")},
+        {DOTS_CC_ENGINE_A, &gui->engineA,             twisterColorForSection("MilkDrop")},
+        {DOTS_CC_ENGINE_B, &gui->engineB,             twisterColorForSection("MilkDrop")},
+        {DOTS_CC_SHADER_RUNNING, &gui->shaderRunning, twisterColorForSection("Shader")},
         {DOTS_CC_FLAMES_RUNNING, &gui->flamesRunning, twisterColorForSection("Drawing")},
         {DOTS_CC_MILKDROP_RUNNING, &gui->milkdropRunning, twisterColorForSection("MilkDrop")},
         {DOTS_CC_LIGHTS_AMBIENT, &lighting->ambient,  twisterColorForSection("Lights")},
@@ -150,7 +153,7 @@ void MidiController::update() {
 
 void MidiController::newMidiMessage(ofxMidiMessage& msg) {
 //    cout << "Rcv midi: " + std::to_string(msg.status) + " " + std::to_string(msg.channel) + " " + std::to_string(msg.control) + " " + std::to_string(msg.pitch) << endl;
-    if (msg.status == 176 && msg.channel == 1 && msg.control >= DOTS_CC_MILKDROP_MIX && msg.control != DOTS_CC_SEND_ALL) {
+    if (msg.status == 176 && msg.channel == 1 && msg.control >= DOTS_CC_CROSSFADE && msg.control != DOTS_CC_SEND_ALL) {
         // Everything past the scene parameters (MilkDrop, lights) goes by the outputs table
         for (const Output &output : outputs) {
             if (output.cc == msg.control) setFromMidi(output.param, msg.value);
@@ -159,6 +162,10 @@ void MidiController::newMidiMessage(ofxMidiMessage& msg) {
         milkdropPresetSteps--;
     } else if (msg.status == 144 && msg.channel == 1 && msg.pitch == DOTS_NOTE_NEXT_PRESET && msg.velocity > 0) {
         milkdropPresetSteps++;
+    } else if (msg.status == 144 && msg.channel == 1 && msg.pitch == DOTS_NOTE_PREV_SHADER && msg.velocity > 0) {
+        shaderSteps--;
+    } else if (msg.status == 144 && msg.channel == 1 && msg.pitch == DOTS_NOTE_NEXT_SHADER && msg.velocity > 0) {
+        shaderSteps++;
     } else if (msg.status == 176 && msg.channel == 1 && msg.control >= 0 && msg.control < 24) {
         sliders[msg.control] = (float)msg.value/127.0;
         stateManager->controllerToSceneParams(msg.control, sliders[msg.control]);

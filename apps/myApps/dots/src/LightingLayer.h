@@ -22,6 +22,7 @@
 #define LIGHTING_FEED_B_FLAMES 0     // the flames, masked by the light
 #define LIGHTING_FEED_B_MILKDROP 1   // MilkDrop, masked by the light
 #define LIGHTING_FEED_B_LIGHT 2      // the light alone
+#define LIGHTING_FEED_B_SHADER 3     // the shader engine, masked by the light
 
 struct Light {
     ofParameterGroup group;
@@ -44,9 +45,10 @@ public:
     ofFbo &apply(ofFbo &source);
     // Feed B: flames or MilkDrop masked by the light, or the light alone, as a top layer:
     // alpha is the amount of light (fully transparent when no light is on)
-    ofFbo &renderFeedB(ofFbo &flames, ofFbo &milkdrop);
+    ofFbo &renderFeedB(ofFbo &flames, ofFbo &milkdrop, ofFbo &shader);
     bool feedBUsesMilkDrop();
     bool feedBUsesFlames();
+    bool feedBUsesShader();
     bool anyOn();
 
     void saveSnapshot(int slot);
@@ -57,7 +59,7 @@ public:
     ofParameter<int> selected;      // light the preview's mouse moves when not near another (1-4)
     ofParameter<int> snapshot;      // slot for Save/Load (1-8)
     ofParameter<bool> feedAIncludesLights;
-    ofParameter<int> feedBSource;   // LIGHTING_FEED_B_FLAMES, _MILKDROP or _LIGHT
+    ofParameter<int> feedBSource;   // LIGHTING_FEED_B_FLAMES, _MILKDROP, _LIGHT or _SHADER
     Light lights[LIGHTING_N_LIGHTS];
 
 private:
