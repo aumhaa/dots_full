@@ -149,6 +149,10 @@ bool LightingLayer::feedBUsesMilkDrop() {
     return feedBSource == LIGHTING_FEED_B_MILKDROP && anyOn();
 }
 
+bool LightingLayer::feedBUsesFlames() {
+    return feedBSource == LIGHTING_FEED_B_FLAMES && anyOn();
+}
+
 void LightingLayer::render(ofFbo &source, ofFbo &target, int outputMode) {
     // Compiled on first use, in the main window's GL context
     if (!shader.isLoaded()) {

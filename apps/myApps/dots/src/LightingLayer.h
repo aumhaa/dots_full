@@ -46,6 +46,7 @@ public:
     // alpha is the amount of light (fully transparent when no light is on)
     ofFbo &renderFeedB(ofFbo &flames, ofFbo &milkdrop);
     bool feedBUsesMilkDrop();
+    bool feedBUsesFlames();
     bool anyOn();
 
     void saveSnapshot(int slot);

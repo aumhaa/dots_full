@@ -69,10 +69,13 @@ void GuiApp::setup() {
     metaParams.add(wandering.set("wandering", false));
     metaParams.add(fadeFrames.set("fadeFrames", 100, 0, 200));
     metaParams.add(showViewer.set("show viewer (v)", false));
+    metaParams.add(flamesRunning.set("flames running", true));
+    metaParams.add(maxFps.set("max fps", 30, 10, 60));
     metaGui.setup(metaParams);
 
     // MilkDrop
     milkdropParams.setName("MilkDrop");
+    milkdropParams.add(milkdropRunning.set("running", true));
     milkdropParams.add(milkdropMix.set("mix", 0, 0, 1));
     milkdropParams.add(milkdropPresetDuration.set("presetSeconds", 30, 5, 120));
     milkdropParams.add(milkdropLockPreset.set("lockPreset", false));
@@ -204,7 +207,9 @@ void GuiApp::draw() {
         ofDrawBitmapString(s, 10, 15);
     }
 
-    if (pctParticles) {
+    if (flamesPaused) {
+        ofDrawBitmapString("flames paused", 150, 15);
+    } else if (pctParticles) {
         sprintf(s, "%d%% particles", (int)(pctParticles*100));
         ofDrawBitmapString(s, 150, 15);
     }

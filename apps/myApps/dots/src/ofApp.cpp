@@ -176,6 +176,10 @@ void ofApp::setup(){
 void ofApp::guiUpdate() {
     // Copy data to gui
     gui->frameRate = ofGetFrameRate();
+    if (gui->maxFps != appliedMaxFps) {
+        appliedMaxFps = gui->maxFps;
+        ofSetFrameRate(appliedMaxFps);
+    }
 
     // Viewer: the GUI's checkbox shows or hides it; its close button only hides it
     bool viewerVisible = glfwGetWindowAttrib(viewerWindow, GLFW_VISIBLE);
@@ -773,12 +777,19 @@ void ofApp::update(){
         }
     }
 
-    if (stateManager->wandering) {
-        flameWander();
-    } else {
-        flameRotate();
+    // Paused flames skip all their work and keep their last frame. They also
+    // pause themselves while MilkDrop fills the mix, unless feed B shows them.
+    bool flamesHidden = milkdropMix >= 0.999 && !lighting->feedBUsesFlames();
+    flamesActive = gui->flamesRunning && !flamesHidden;
+    gui->flamesPaused = !flamesActive;
+    if (flamesActive) {
+        if (stateManager->wandering) {
+            flameWander();
+        } else {
+            flameRotate();
+        }
+        flameDraw();
     }
-    flameDraw();
 }
 
 //--------------------------------------------------------------
@@ -834,7 +845,8 @@ bool pairCompareDesc(const pointPair& firstElem, pointPair& secondElem) {
 }
 
 //--------------------------------------------------------------
-void ofApp::draw(){
+// The flames into visualsFbo (left as they are while paused)
+void ofApp::drawFlames(){
     visualsFbo.begin();
     ofSetColor(0, frameClearSpeed);
     ofFill();
@@ -917,9 +929,16 @@ void ofApp::draw(){
 
     ofClearAlpha();
     visualsFbo.end();
+}
 
-    // MilkDrop only renders while it's in the mix, or feed B shows it
-    if (milkdropMix > 0 || lighting->feedBUsesMilkDrop()) {
+//--------------------------------------------------------------
+void ofApp::draw(){
+    if (flamesActive) {
+        drawFlames();
+    }
+
+    // MilkDrop only renders while it's running and in the mix, or feed B shows it
+    if (gui->milkdropRunning && (milkdropMix > 0 || lighting->feedBUsesMilkDrop())) {
         projectM.render();
     }
 

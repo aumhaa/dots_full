@@ -42,6 +42,9 @@ public:
     ofParameter<bool> wandering;
     ofParameter<int> fadeFrames;
     ofParameter<bool> showViewer;
+    ofParameter<bool> flamesRunning;   // off: the flames stop processing and hold their last frame
+    ofParameter<int> maxFps;           // frame-rate cap, so paused engines free the CPU instead of speeding up the loop
+    bool flamesPaused = false;         // mirrored from ofApp: paused by hand or by a full MilkDrop mix
 
     // Closing the control window quits dots (the viewer only ever hides)
     void exit();
@@ -50,6 +53,7 @@ public:
     ofParameterGroup milkdropParams;
     ofParameter<float> milkdropMix, milkdropPresetDuration;
     ofParameter<bool> milkdropLockPreset, milkdropShuffle;
+    ofParameter<bool> milkdropRunning;  // off: MilkDrop stops rendering and holds its last frame
     ofxPanel milkdropGui;
     ofxButton prevPresetBtn, nextPresetBtn;
     void prevPresetPressed();

@@ -33,6 +33,15 @@ seconds per preset, lock and shuffle, and previous/next preset (also `[` and
 `]`). Over MIDI: CC 21 on channel 1 is the mix (sent back on DotsOutput like
 the other parameters), notes 5 and 6 on channel 1 are previous/next preset.
 
+### Pausing the engines
+
+"flames running" (Meta panel, CC 25) and MilkDrop's "running" (CC 26) stop an
+engine's processing; it holds its last frame. The flames also pause by
+themselves while MilkDrop's mix is at 100%, unless feed B is showing them, and
+the control window says "flames paused". "max fps" (Meta panel, 30 by default)
+caps the frame rate, so a paused engine frees the CPU rather than speeding the
+loop up: the flames are about 85% of a core, MilkDrop about 5%.
+
 ### Spotlights
 
 Up to four spotlights sit over the final picture (`src/LightingLayer`). Each

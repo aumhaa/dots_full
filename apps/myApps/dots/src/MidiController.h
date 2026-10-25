@@ -27,6 +27,8 @@
 #define DOTS_CC_LIGHTS_AMBIENT 22
 #define DOTS_CC_FEED_A_LIGHTS 23    // lights on Syphon feed A (on from 64)
 #define DOTS_CC_FEED_B_SOURCE 24    // Syphon feed B: flames, MilkDrop or light (0-2 across the range)
+#define DOTS_CC_FLAMES_RUNNING 25   // flames processing on/off (on from 64)
+#define DOTS_CC_MILKDROP_RUNNING 26 // MilkDrop processing on/off (on from 64)
 #define DOTS_CC_LIGHTS 32
 #define DOTS_CCS_PER_LIGHT 10
 

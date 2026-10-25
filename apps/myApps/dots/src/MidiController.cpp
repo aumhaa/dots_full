@@ -73,6 +73,8 @@ void MidiController::add_listeners() {
         {19, &scene.audioEffectSize3,                 twisterColorForSection("Audio Effects")},
         {20, &scene.audioEffectSize4,                 twisterColorForSection("Audio Effects")},
         {DOTS_CC_MILKDROP_MIX, &gui->milkdropMix,     twisterColorForSection("MilkDrop")},
+        {DOTS_CC_FLAMES_RUNNING, &gui->flamesRunning, twisterColorForSection("Drawing")},
+        {DOTS_CC_MILKDROP_RUNNING, &gui->milkdropRunning, twisterColorForSection("MilkDrop")},
         {DOTS_CC_LIGHTS_AMBIENT, &lighting->ambient,  twisterColorForSection("Lights")},
         {DOTS_CC_FEED_A_LIGHTS, &lighting->feedAIncludesLights, twisterColorForSection("Lights")},
         {DOTS_CC_FEED_B_SOURCE, &lighting->feedBSource, twisterColorForSection("Lights")},

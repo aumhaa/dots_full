@@ -55,6 +55,9 @@ public:
                      randctx *rc, unsigned short *xform_distribution, const int fuse = 20);
 
     void flameDraw();
+    void drawFlames();
+    bool flamesActive = true;   // false while paused, by hand or because MilkDrop fills the mix
+    int appliedMaxFps = -1;
     void flameWander();
     void flameRotate();
 
