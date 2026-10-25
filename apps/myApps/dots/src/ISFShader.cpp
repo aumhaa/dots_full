@@ -247,9 +247,13 @@ void ISFShader::render(ofFbo &target, float time, float timeDelta, int frameInde
 
     // The quad's (0,0) lands on the framebuffer's first row, which openFrameworks shows
     // at the top; ISF puts y = 0 at the bottom, so flip it the right way up
+    // Opaque, it's laid over black; with alpha kept, copied as it is
     target.begin();
-    ofClear(0, 255);
+    ofClear(0, keepAlpha ? 0 : 255);
+    ofPushStyle();
+    if (keepAlpha) ofDisableAlphaBlending();
     ofSetColor(255);
     raw.draw(0, h, w, -h);
+    ofPopStyle();
     target.end();
 }

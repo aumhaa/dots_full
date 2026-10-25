@@ -93,6 +93,14 @@ Files tab under "Media for Synesthesia scenes" (it lists Synesthesia's media
 folders, from its own settings, and `bin/data/media`), or the kind with
 "media (0-4)" in the Shader panel: none, flames, MilkDrop, Syphon, file. The
 choice is saved in shader presets, and an engine used as media keeps running.
+As in Synesthesia, media only shows in scenes written to read it (about a
+third: the library marks them "[Synesthesia, media]", and the Shader panel
+says "unused:" when the scene running ignores it); Raw Video shows it as it is.
+
+"alpha out" in the Shader panel is Synesthesia's Alpha Channel: the shader's
+own alpha goes out with its picture (on the "dots shader" feed, say), where
+otherwise it's opaque. Many scenes write alpha 0 where they have nothing to
+show, so they come out transparent there.
 
 Not yet: the song-change transitions (each picks a value when the scene
 loads).
@@ -171,7 +179,8 @@ above.
   premultiplied): the flames, MilkDrop or the shader masked by the light
   (whichever it shows keeps rendering for it), or the light alone. Fully
   transparent where no light falls.
-- **dots shader**: the shader engine's own output.
+- **dots shader**: the shader engine's own output, with the shader's alpha
+  when "alpha out" is on.
 
 The viewer window starts hidden and its close button only hides it; dots
 keeps rendering for the preview and Syphon. Show it with "show viewer (v)" in

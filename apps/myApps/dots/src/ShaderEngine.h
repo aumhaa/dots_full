@@ -24,6 +24,11 @@ public:
 
     // Advances the shader's clock and draws a frame into getFbo()
     void render();
+    // Whether the shaders' own alpha goes out (getFbo() and the "dots shader" feed)
+    void setKeepAlpha(bool keep) { keepAlpha = keep; }
+
+    // Whether the shader now running reads its media (only Synesthesia scenes do)
+    bool currentUsesMedia() const;
 
     // The latest audio for ISF's audio inputs: samples (-1 to 1) and spectrum (0 to 1)
     void setAudioInput(const float *samples, int sampleCount, const float *bins, int binCount);
@@ -52,6 +57,7 @@ public:
         string path, name;
         bool animated, synesthesia;
         string thumbnail;   // a Synesthesia scene's preview image, if it has one
+        bool usesMedia = false;   // a Synesthesia scene that reads syn_UserImage
     };
     const vector<Entry> &getAllShaders() const { return allShaders; }
 
@@ -78,7 +84,7 @@ private:
 
     vector<Entry> allShaders;   // every single-pass generator and scene found
     vector<string> library;     // the ones on offer now
-    bool animatedOnly = true;
+    bool animatedOnly = true, keepAlpha = false;
     int sources = ALL_SOURCES;
     int index = -1;
     const SynAudio *audio = nullptr;

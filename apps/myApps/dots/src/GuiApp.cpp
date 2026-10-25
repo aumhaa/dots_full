@@ -138,6 +138,7 @@ void GuiApp::setup() {
     shaderParams.add(shaderAnimatedOnly.set("animated only", true));
     shaderParams.add(shaderSources.set("kinds: all/ISF/syn", 0, 0, 2));
     shaderParams.add(shaderMedia.set("media (0-4)", 0, 0, 4));
+    shaderParams.add(shaderAlpha.set("alpha out", false));
     shaderGui.setup(shaderParams);
     shaderGui.add(prevShaderBtn.setup("Prev shader  <"));
     shaderGui.add(nextShaderBtn.setup("Next shader  >"));
@@ -401,7 +402,10 @@ void GuiApp::draw() {
     if (status.size() > 26) {
         ofDrawBitmapString(status.substr(26, 26), shaderGui.getPosition().x, statusY + 14);
     }
-    string mediaLine = (shaderPaused ? "paused; " : "") + string("media: ") + shaderEngine->getMedia().describe();
+    // Media a scene doesn't read is marked, so it's clear why it doesn't show
+    MediaInput &media = shaderEngine->getMedia();
+    bool unused = media.getKind() != MediaInput::NONE && !shaderEngine->currentUsesMedia();
+    string mediaLine = (shaderPaused ? "paused; " : "") + string(unused ? "unused: " : "media: ") + media.describe();
     ofDrawBitmapString(mediaLine.substr(0, 26), shaderGui.getPosition().x, statusY + 28);
     shaderInputsGui.draw();
     milkdropGui.draw();

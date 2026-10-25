@@ -28,6 +28,9 @@ public:
     // The inputs as parameters, for the GUI, MIDI and presets
     ofParameterGroup parameters;
 
+    // Pass the shader's own alpha out (Synesthesia's "Alpha Channel"); otherwise the output is opaque
+    bool keepAlpha = false;
+
 protected:
     string path, name, error;
 };

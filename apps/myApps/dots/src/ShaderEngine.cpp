@@ -62,7 +62,9 @@ void ShaderEngine::addSynesthesiaFolder(const string &folder) {
         string thumbnail = json.is_object() && json.contains("IMAGE_PATH") && json["IMAGE_PATH"].is_string() ? json["IMAGE_PATH"].get<string>() : "";
         if (!thumbnail.empty()) thumbnail = ofFilePath::join(path, thumbnail);
         if (!ofFile::doesFileExist(thumbnail, false)) thumbnail.clear();
-        allShaders.push_back({path, title.empty() ? ofFilePath::getBaseName(path) : title, true, true, thumbnail});
+        // Media only shows in scenes written to read it
+        bool usesMedia = ofBufferFromFile(ofFilePath::join(path, "main.glsl")).getText().find("UserImage") != string::npos;
+        allShaders.push_back({path, title.empty() ? ofFilePath::getBaseName(path) : title, true, true, thumbnail, usesMedia});
     }
 }
 
@@ -148,6 +150,9 @@ void ShaderEngine::render() {
     lastFrameTime = now;
     time += delta;
 
+    shader->keepAlpha = keepAlpha;
+    if (outgoing) outgoing->keepAlpha = keepAlpha;
+
     if (outgoing) {
         // Mid-fade: both shaders run, the new one over the old
         float t = ofClamp((now - fadeStart) / fadeSeconds, 0, 1);
@@ -155,11 +160,13 @@ void ShaderEngine::render() {
         outgoing->render(outgoingFbo, outgoingTime, delta, outgoingFrame++);
         if (shaderOk) shader->render(incomingFbo, time, delta, frameIndex++);
         fbo.begin();
-        ofClear(0, 255);
+        ofClear(0, keepAlpha ? 0 : 255);
         ofPushStyle();
-        ofEnableAlphaBlending();
+        // With alpha kept, the old one is copied as it is, so its alpha comes through too
+        if (keepAlpha) ofDisableAlphaBlending();
         ofSetColor(255);
         outgoingFbo.draw(0, 0);
+        ofEnableAlphaBlending();
         ofSetColor(255, 255 * t * t * (3 - 2 * t));
         incomingFbo.draw(0, 0);
         ofPopStyle();
@@ -218,6 +225,14 @@ void ShaderEngine::checkForChanges() {
         ofLogNotice("ShaderEngine") << "Reloading " << shader->getName();
         load(index);
     }
+}
+
+bool ShaderEngine::currentUsesMedia() const {
+    string current = getCurrentPath();
+    for (const Entry &entry : allShaders) {
+        if (entry.path == current) return entry.usesMedia;
+    }
+    return false;
 }
 
 string ShaderEngine::getStatus() const {

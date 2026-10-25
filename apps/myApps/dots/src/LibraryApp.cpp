@@ -351,7 +351,8 @@ void LibraryApp::drawFiles() {
         shaderFilter.Draw("search##shader", -FLT_MIN);
         if (ImGui::BeginListBox("##shaders", ImVec2(-FLT_MIN, 12 * ImGui::GetTextLineHeightWithSpacing()))) {
             for (const ShaderEngine::Entry &entry : app->shaderEngine->getAllShaders()) {
-                string label = entry.name + (entry.synesthesia ? "  [Synesthesia]" : "") + (entry.animated ? "" : "  (static)");
+                string label = entry.name + (entry.usesMedia ? "  [Synesthesia, media]" : entry.synesthesia ? "  [Synesthesia]" : "")
+                    + (entry.animated ? "" : "  (static)");
                 if (!shaderFilter.PassFilter(label.c_str())) continue;
                 // Names can repeat (a scene and its copy), so the path keeps each row apart
                 if (ImGui::Selectable((label + "##" + entry.path).c_str(), entry.path == current, ImGuiSelectableFlags_AllowDoubleClick)

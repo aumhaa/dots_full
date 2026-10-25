@@ -619,14 +619,14 @@ void SynScene::render(ofFbo &target, float time, float timeDelta, int frameIndex
     ofPopStyle();
 
     // The passes are GL-style, y up; openFrameworks shows a framebuffer's first row at the top.
-    // Synesthesia shows the colour whatever the alpha, so only the colour is copied.
+    // As in Synesthesia, the colour shows whatever the alpha, and the alpha goes out only if asked for.
     Pass &picture = passes.back();
     target.begin();
-    ofClear(0, 255);
+    ofClear(0, keepAlpha ? 0 : 255);
     ofPushStyle();
     ofDisableAlphaBlending();
     ofSetColor(255);
-    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_FALSE);
+    if (!keepAlpha) glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_FALSE);
     picture.buffers[picture.front].draw(0, h, w, -h);
     glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
     ofPopStyle();

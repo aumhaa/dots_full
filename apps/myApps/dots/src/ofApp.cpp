@@ -1019,6 +1019,7 @@ void ofApp::draw(){
         projectM.render();
     }
     if (shaderActive) {
+        shaderEngine->setKeepAlpha(gui->shaderAlpha);
         shaderEngine->updateMedia(engineFbo(ENGINE_FLAMES), engineFbo(ENGINE_MILKDROP));
         shaderEngine->setAudioInput(audioInput, audioBufferSize, fftOutput, nFftBuckets);
         shaderEngine->render();
