@@ -55,5 +55,8 @@ private:
     // Files
     vector<string> milkdropPresets;   // relative to the presets folder
     ImGuiTextFilter milkdropFilter, shaderFilter;
+    // Synesthesia scenes' preview images, loaded when first shown; null if one can't be
+    const ofTexture *thumbnail(const string &file);
+    std::map<string, ofTexture> thumbnails;
     vector<int> lightSnapshots;
 };

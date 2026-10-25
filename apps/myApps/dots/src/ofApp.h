@@ -9,6 +9,7 @@
 #include "ProjectMEngine.h"
 #include "LightingLayer.h"
 #include "ShaderEngine.h"
+#include "SynAudio.h"
 #include "PresetManager.h"
 #include "Fader.h"
 #include <functional>
@@ -138,6 +139,8 @@ public:
     // Which engines work this frame, and each engine's picture
     bool milkdropActive = false, shaderActive = false;
     bool shaderAnimatedOnly = true;
+    int shaderSources = 0;
+    SynAudio synAudio;   // Synesthesia's audio uniforms, from the same input
     ofFbo &engineFbo(int engine);
 
     // Preset fades: values glide (fader); what can't fade live fades out from a frozen frame

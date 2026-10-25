@@ -341,18 +341,28 @@ void LibraryApp::drawFiles() {
         }
     }
 
-    // Shaders: every generator found, static ones marked
-    if (ImGui::CollapsingHeader("Shaders")) {
+    // Shaders: every generator and Synesthesia scene found, static ones marked
+    if (ImGui::CollapsingHeader("Shaders and Synesthesia scenes")) {
         string current = app->shaderEngine->getCurrentPath();
         shaderFilter.Draw("search##shader", -FLT_MIN);
         if (ImGui::BeginListBox("##shaders", ImVec2(-FLT_MIN, 12 * ImGui::GetTextLineHeightWithSpacing()))) {
             for (const ShaderEngine::Entry &entry : app->shaderEngine->getAllShaders()) {
-                string label = ofFilePath::getBaseName(entry.path) + (entry.animated ? "" : "  (static)");
+                string label = entry.name + (entry.synesthesia ? "  [Synesthesia]" : "") + (entry.animated ? "" : "  (static)");
                 if (!shaderFilter.PassFilter(label.c_str())) continue;
-                if (ImGui::Selectable(label.c_str(), entry.path == current, ImGuiSelectableFlags_AllowDoubleClick)
+                // Names can repeat (a scene and its copy), so the path keeps each row apart
+                if (ImGui::Selectable((label + "##" + entry.path).c_str(), entry.path == current, ImGuiSelectableFlags_AllowDoubleClick)
                     && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
                     string path = entry.path;
                     app->post([this, path]() { app->shaderEngine->loadPath(path); });
+                }
+                // Hovering a Synesthesia scene shows its preview
+                if (!entry.thumbnail.empty() && ImGui::IsItemHovered()) {
+                    if (const ofTexture *preview = thumbnail(entry.thumbnail)) {
+                        ImGui::BeginTooltip();
+                        ImGui::Image((ImTextureID)(uintptr_t)preview->getTextureData().textureID,
+                                     ImVec2(preview->getWidth(), preview->getHeight()));
+                        ImGui::EndTooltip();
+                    }
                 }
             }
             ImGui::EndListBox();
@@ -386,6 +396,23 @@ void LibraryApp::drawFiles() {
         reveal("System ISF shaders", "/Library/Graphics/ISF");
         reveal("Light snapshots", ofToDataPath("lights", true));
     }
+}
+
+const ofTexture *LibraryApp::thumbnail(const string &file) {
+    auto found = thumbnails.find(file);
+    if (found == thumbnails.end()) {
+        ofTexture &texture = thumbnails[file];
+        ofPixels pixels;
+        if (ofLoadImage(pixels, file) && pixels.getWidth() > 0) {
+            // About 320 wide is plenty, and keeps a few hundred of them small
+            float scale = std::min(1.0f, 320.0f / pixels.getWidth());
+            pixels.resize(pixels.getWidth() * scale, pixels.getHeight() * scale);
+            texture.allocate(pixels, false);   // GL_TEXTURE_2D, as ImGui draws
+            texture.loadData(pixels);
+        }
+        found = thumbnails.find(file);
+    }
+    return found->second.isAllocated() ? &found->second : nullptr;
 }
 
 void LibraryApp::keyPressed(int key) {

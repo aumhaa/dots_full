@@ -60,6 +60,36 @@ notes 7 and 8); the shader's own inputs get a panel of their own, rebuilt for
 each shader. A shader reloads when its file changes, so it can be edited live.
 Its output is also published on its own Syphon feed, "dots shader".
 
+### Synesthesia scenes
+
+The shader engine also runs Synesthesia scenes (`.synScene` folders), read
+in place from Synesthesia's own scene folder (its "primary scene folder"
+preference), the scenes that come with Synesthesia in
+`/Applications/Synesthesia.app`, and `bin/data/synesthesia`. They're listed
+with the ISF shaders (hover one in the library to see its preview); "kinds:
+all/ISF/syn" in the Shader panel narrows the list that previous/next steps
+through.
+
+A scene's passes run with their own buffers, which keep their last frame, so
+feedback scenes work; its controls become the shader inputs panel (smooth,
+speed, bang and counter controls behave as in Synesthesia), and its images
+are loaded. dots supplies Synesthesia's built-in functions itself
+(`src/SynLibrary.h`), and works out the audio uniforms (`syn_BassLevel`,
+`syn_OnBeat`, `syn_BPM` and the rest) from its own audio input
+(`src/SynAudio.cpp`).
+
+Not yet: `script.js` (the uniforms a script sets stay at 0, so scenes that
+lean on one may sit still or show nothing), media (scenes take their
+no-media path), and the song-change transitions (each picks a value when the
+scene loads).
+
+To check every scene, run dots from Terminal with `DOTS_TEST_SCENES=1`
+(`=all` adds the ISF shaders): it compiles and runs each for 30 frames with a
+test signal, prints a line for each, and quits. `DOTS_TEST_SHOTS=<folder>`
+also saves the last frame of each and contact sheets of them all.
+
+    DOTS_TEST_SCENES=1 bin/dots.app/Contents/MacOS/dots | grep scene-test
+
 ### The library: presets and files
 
 The "dots library" window (ImGui; "show library (l)" in the Meta panel, its

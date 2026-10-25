@@ -10,22 +10,12 @@
 
 #pragma once
 
-#include "ofMain.h"
+#include "ShaderSource.h"
 
-class ISFShader {
+class ISFShader : public ShaderSource {
 public:
-    // False, with getError(), if the file can't be read, parsed or compiled
-    bool load(const string &path);
-
-    // Draws a frame into target; time is the shader's own clock in seconds
-    void render(ofFbo &target, float time, float timeDelta, int frameIndex);
-
-    const string &getName() const { return name; }
-    const string &getError() const { return error; }
-    const string &getPath() const { return path; }
-
-    // The shader's inputs as parameters, for the GUI and MIDI
-    ofParameterGroup parameters;
+    bool load(const string &path) override;
+    void render(ofFbo &target, float time, float timeDelta, int frameIndex) override;
 
     // What a file is, from its header: dots's shader engine runs single-pass
     // generators; transitions (start and end image) and filters are left out
@@ -43,7 +33,6 @@ private:
         ofParameter<glm::vec2> pointValue;
     };
 
-    string path, name, error;
     vector<Input> inputs;
     ofShader shader;
     ofMesh quad;

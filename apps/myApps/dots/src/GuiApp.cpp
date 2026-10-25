@@ -136,6 +136,7 @@ void GuiApp::setup() {
     shaderParams.setName("Shader");
     shaderParams.add(shaderRunning.set("running", true));
     shaderParams.add(shaderAnimatedOnly.set("animated only", true));
+    shaderParams.add(shaderSources.set("kinds: all/ISF/syn", 0, 0, 2));
     shaderGui.setup(shaderParams);
     shaderGui.add(prevShaderBtn.setup("Prev shader  <"));
     shaderGui.add(nextShaderBtn.setup("Next shader  >"));
@@ -217,6 +218,10 @@ void GuiApp::update(){
         shaderInputsGui.setHeaderBackgroundColor(guiColorForTwister(shaderColor, 110));
         for (std::size_t i = 0; i < shaderInputsGui.getNumControls(); ++i) {
             shaderInputsGui.getControl(i)->setFillColor(guiColorForTwister(shaderColor, 170));
+        }
+        // A Synesthesia scene's groups start folded if they'd run off the window
+        if (shaderInputsGui.getPosition().y + shaderInputsGui.getHeight() > ofGetHeight()) {
+            shaderInputsGui.minimizeAll();
         }
     }
 

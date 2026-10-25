@@ -3,18 +3,22 @@
 //  dots
 //
 //  The third engine: ISF generator shaders from the system ISF folders and
-//  bin/data/shaders, one at a time, drawn into an ofFbo. A shader whose file
-//  changes is reloaded, so shaders can be edited live.
+//  bin/data/shaders, and Synesthesia scenes from Synesthesia's scene folder,
+//  the app itself and bin/data/synesthesia, one at a time, drawn into an
+//  ofFbo. A shader whose files change is reloaded, so it can be edited live.
 //
 
 #pragma once
 
 #include "ofMain.h"
-#include "ISFShader.h"
+#include "ShaderSource.h"
+
+class SynAudio;
 
 class ShaderEngine {
 public:
-    void setup(int width, int height);
+    // audio feeds the Synesthesia scenes' audio uniforms
+    void setup(int width, int height, const SynAudio *audio = nullptr);
     void resize(int width, int height);
 
     // Advances the shader's clock and draws a frame into getFbo()
@@ -25,8 +29,10 @@ public:
     void previous();
     void select(int index);
 
-    // Only the generators that animate on their own, or the static patterns too
-    void setAnimatedOnly(bool animatedOnly);
+    // Only the generators that animate on their own, or the static patterns too;
+    // and which kinds are on offer
+    enum Sources { ALL_SOURCES, ISF_ONLY, SYNESTHESIA_ONLY };
+    void setFilter(bool animatedOnly, int sources);
 
     // Loads a shader by its file, whether or not it's in the current list.
     // With fadeSeconds, the old shader keeps running and fades out under the new one.
@@ -35,15 +41,20 @@ public:
 
     // Every generator found, for the file browser
     struct Entry {
-        string path;
-        bool animated;
+        string path, name;
+        bool animated, synesthesia;
+        string thumbnail;   // a Synesthesia scene's preview image, if it has one
     };
     const vector<Entry> &getAllShaders() const { return allShaders; }
 
     // Call about once a second: reloads the shader if its file changed
     void checkForChanges();
 
-    ISFShader &getShader() { return *shader; }
+    // Loads and runs every Synesthesia scene (and ISF shader, with includeISF)
+    // for 30 frames, printing a line for each to stdout
+    void testAll(bool includeISF);
+
+    ShaderSource &getShader() { return *shader; }
     int getIndex() const { return index; }
     int getCount() const { return library.size(); }
     string getStatus() const;
@@ -53,16 +64,21 @@ public:
 
 private:
     void load(int newIndex, float fadeSeconds = 0);
+    std::unique_ptr<ShaderSource> makeSource(const string &path);
+    static std::filesystem::file_time_type fileTime(const string &path);
+    void addSynesthesiaFolder(const string &folder);
 
-    vector<Entry> allShaders;   // every single-pass generator found
+    vector<Entry> allShaders;   // every single-pass generator and scene found
     vector<string> library;     // the ones on offer now
     bool animatedOnly = true;
+    int sources = ALL_SOURCES;
     int index = -1;
-    std::unique_ptr<ISFShader> shader = std::make_unique<ISFShader>();
+    const SynAudio *audio = nullptr;
+    std::unique_ptr<ShaderSource> shader;
     bool shaderOk = false;
 
     // A shader fading out under the new one
-    std::unique_ptr<ISFShader> outgoing;
+    std::unique_ptr<ShaderSource> outgoing;
     ofFbo outgoingFbo, incomingFbo;
     float fadeStart = 0, fadeSeconds = 0, outgoingTime = 0;
     int outgoingFrame = 0;

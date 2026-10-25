@@ -62,7 +62,12 @@ void ofApp::setup(){
     outputFbo.allocate(ofGetWidth(), ofGetHeight(), GL_RGBA);
 
     crossfade = 0;
-    shaderEngine->setup(ofGetWidth(), ofGetHeight());
+    shaderEngine->setup(ofGetWidth(), ofGetHeight(), &synAudio);
+    // DOTS_TEST_SCENES=1 compiles and runs every Synesthesia scene, reports, and quits (=all adds ISF)
+    if (const char *test = getenv("DOTS_TEST_SCENES")) {
+        shaderEngine->testAll(string(test) == "all");
+        ofExit();
+    }
     presets = std::make_unique<PresetManager>(*this);
     shaderSyphonServer.setName("dots shader");
     projectM.setup(ofGetWidth(), ofGetHeight(), ofToDataPath("projectM", true));
@@ -804,9 +809,10 @@ void ofApp::update(){
     gui->milkdropPaused = !milkdropActive;
     gui->shaderPaused = !shaderActive;
 
-    if (gui->shaderAnimatedOnly != shaderAnimatedOnly) {
+    if (gui->shaderAnimatedOnly != shaderAnimatedOnly || gui->shaderSources != shaderSources) {
         shaderAnimatedOnly = gui->shaderAnimatedOnly;
-        shaderEngine->setAnimatedOnly(shaderAnimatedOnly);
+        shaderSources = gui->shaderSources;
+        shaderEngine->setFilter(shaderAnimatedOnly, shaderSources);
     }
 
     // Shaders reload when their file changes
@@ -877,8 +883,9 @@ void ofApp::audioIn(ofSoundBuffer & buffer){
         if (!std::isfinite(smoothedAudioRMS)) smoothedAudioRMS = 0;
     }
 
-    // MilkDrop hears the same signal as the flames (silence when there's no audio)
+    // MilkDrop and the Synesthesia scenes hear the same signal as the flames (silence when there's no audio)
     projectM.addSamples(audioInput, bufferSize);
+    synAudio.process(audioInput, bufferSize, buffer.getSampleRate());
 }
 
 bool pairCompareDesc(const pointPair& firstElem, pointPair& secondElem) {

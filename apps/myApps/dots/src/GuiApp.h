@@ -73,6 +73,7 @@ public:
     shared_ptr<ShaderEngine> shaderEngine;
     ofParameterGroup shaderParams;
     ofParameter<bool> shaderRunning, shaderAnimatedOnly;
+    ofParameter<int> shaderSources;   // ShaderEngine::Sources: all, ISF, Synesthesia
     ofxPanel shaderGui, shaderInputsGui;
     ofxButton prevShaderBtn, nextShaderBtn;
     void prevShaderPressed();
