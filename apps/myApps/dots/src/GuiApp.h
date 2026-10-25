@@ -55,6 +55,11 @@ public:
     ofParameterGroup milkdropParams;
     ofParameter<float> milkdropPresetDuration;
     ofParameter<bool> milkdropLockPreset, milkdropShuffle;
+    ofParameter<float> milkdropTransitionSeconds, milkdropBeatSensitivity;
+    ofParameter<bool> milkdropHardCuts;                 // a loud beat cuts straight to the next preset
+    ofParameter<float> milkdropHardCutSensitivity, milkdropHardCutSeconds;
+    ofParameter<int> milkdropMeshSize;                  // the warp mesh across; 3/4 of it down
+    ofParameter<bool> milkdropAspectCorrection;
     ofParameter<bool> milkdropRunning;  // off: MilkDrop stops rendering and holds its last frame
     ofxPanel milkdropGui;
     ofxButton prevPresetBtn, nextPresetBtn;

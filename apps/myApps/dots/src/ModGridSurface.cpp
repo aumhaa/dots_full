@@ -35,26 +35,32 @@ static const SurfaceButton buttons[] = {
     // Above the dials
     {92, "track <", "Drawing"},   {93, "track >", "Drawing"},   {94, "scene <", "Drawing"},  {95, "scene >", "Drawing"},
     {96, "milk <", "MilkDrop"},   {97, "milk >", "MilkDrop"},   {98, "shader <", "Shader"},  {99, "shader >", "Shader"},
-    // Below them: what the grid browses, and its page
-    {108, "sets", "Sets"},        {109, "shaders", "Shader"},   {110, "MilkDrop", "MilkDrop"}, {111, "scenes", "Scenes"},
-    {114, "page <", "Sets"},      {115, "page >", "Sets"},
-    // Left column: the lights and the engines on or off
+    // Left column: the mixer's dials, the lights and the engines on or off
+    {15, "mixer", "Mixer"},
     {16, "light A", "Lights"},    {17, "light B", "Lights"},    {18, "light C", "Lights"},   {19, "light D", "Lights"},
     {12, "flames", "Drawing"},    {13, "MilkDrop", "MilkDrop"}, {14, "shader", "Shader"},
-    // Right column: through the set
+    // Right column: the modes, through the set, and the arrows (up/down the dial pages, left/right the grid's)
+    {33, "flames", "Drawing"},    {34, "milk", "MilkDrop"},     {35, "shader", "Shader"},    {36, "lights", "Lights"},
+    {37, "sets", "Sets"},
     {40, "set prev", "Sets"},     {41, "set next", "Sets"},
+    {70, "^", "Mixer"},           {73, "v", "Mixer"},           {71, "<", "Mixer"},          {72, ">", "Mixer"},
 };
+static const int MIXER_NOTE = 15, FIRST_MODE_NOTE = 33, UP_NOTE = 70, LEFT_NOTE = 71, RIGHT_NOTE = 72, DOWN_NOTE = 73;
 // Left column: the engine on each side of the mixer (a press steps it), and the crossfader dial
 static const int ENGINE_A_NOTE = 11, ENGINE_B_NOTE = 32, CROSSFADE_CC = 17, SPARE_CC = 16;
-// Shown blank: Live's labels would otherwise stay on them
-static const int BLANK_NOTES[] = {15, 100, 101, 102, 103, 104, 105, 106, 107, 112, 113};
+// Above the grid: the dial page (over the last key) and the grid's page (the last key); in lights
+// mode the first four keys pick the light the grid moves
+static const int DIAL_PAGE_NOTE = 107, GRID_PAGE_NOTE = 115, FIRST_LIGHT_KEY = 108;
+// Shown blank (Live's labels would otherwise stay on them); the light keys too, outside lights mode
+static const int BLANK_NOTES[] = {100, 101, 102, 103, 104, 105, 106, 112, 113, 114};
 static const char *engineNames[] = {"flames", "MilkDrop", "shader"};
 static const char *engineSections[] = {"Drawing", "MilkDrop", "Shader"};
-static const char *browseNames[] = {"sets", "shader", "milk", "scene"};   // short: "milk 34/154" fits 12 letters
-static const char *browseSections[] = {"Sets", "Shader", "MilkDrop", "Scenes"};
-// The right strip: the browse mode and page, then a button for each group of dial pages
-static const int BROWSE_INFO_NOTE = 33, GROUP_NOTES[] = {34, 35, 36, 37};
-static const int N_GROUP_NOTES = 4;
+// Each mode: its dial pages, what its grid browses (-1: the grid places the selected light), its colour
+struct SurfaceMode { const char *group, *name, *section; int browse; };
+static const SurfaceMode modes[] = {
+    {"flames", "scene", "Drawing", 3},   {"milk", "milk", "MilkDrop", 2},  {"shader", "shader", "Shader", 1},
+    {"lights", "light", "Lights", -1},   {"sets", "sets", "Sets", 0},
+};
 // A pad shows its item's name, wrapped onto lines; this many letters at most
 static const int PAD_TEXT_LENGTH = 32;
 
@@ -164,9 +170,7 @@ void ModGridSurface::update(bool enabled) {
     }
     for (const ofxMidiMessage &message : messages) handle(message);
 
-    if (pages.update()) {
-        page = std::min(page, (int)pages.get().size() - 1);
-    }
+    pages.update();   // the shader's pages follow the shader; groupPosition() keeps within them
     if (now - lastSend >= 1 / 30.0f) {
         lastSend = now;
         sendFeedback();
@@ -188,7 +192,7 @@ void ModGridSurface::handle(const ofxMidiMessage &message) {
     }
     if (message.status == MIDI_CONTROL_CHANGE && message.channel == MAIN_CHANNEL) {
         if (message.control < 16) {
-            const vector<ControlEntry> &entries = pages.get()[page].entries;
+            const vector<ControlEntry> &entries = pages.get()[currentPage()].entries;
             if (message.control < (int)entries.size()) entries[message.control].setNormalized(message.value / 127.0f);
         } else if (message.control == CROSSFADE_CC) {
             app->gui->crossfade = message.value / 127.0f;
@@ -205,45 +209,58 @@ void ModGridSurface::handle(const ofxMidiMessage &message) {
     }
 }
 
-// The groups of dial pages, in order, each with its pages
-vector<pair<string, vector<int>>> ModGridSurface::groups() const {
-    vector<pair<string, vector<int>>> found;
+// The dial pages on show: the mixer's while it's up, else the mode's
+string ModGridSurface::dialGroup() const {
+    return mixerShown ? "mixer" : modes[mode].group;
+}
+
+vector<int> ModGridSurface::groupPages() const {
+    vector<int> found;
     const vector<ControlPage> &all = pages.get();
     for (int i = 0; i < (int)all.size(); ++i) {
-        if (found.empty() || found.back().first != all[i].group) found.push_back({all[i].group, {}});
-        found.back().second.push_back(i);
+        if (all[i].group == dialGroup()) found.push_back(i);
     }
     return found;
+}
+
+int ModGridSurface::groupPosition() const {
+    auto at = pageInGroup.find(dialGroup());
+    int count = groupPages().size();
+    return at == pageInGroup.end() ? 0 : ofClamp(at->second, 0, std::max(count - 1, 0));
+}
+
+int ModGridSurface::currentPage() const {
+    vector<int> found = groupPages();
+    return found.empty() ? 0 : found[groupPosition()];
 }
 
 int ModGridSurface::browsePageCount() const {
     return std::max(1, (browseCount() + 63) / 64);
 }
 
+void ModGridSurface::selectMode(int which) {
+    mode = which;
+    mixerShown = false;
+    if (modes[mode].browse < 0) return;
+    browse = modes[mode].browse;
+    if (browse == BROWSE_MILKDROP && milkdropPresets.empty()) scanMilkdrop();
+    // Open on the page with the current item
+    int current = browseCurrent();
+    if (current >= 0) browsePage[browse] = current / 64;
+}
+
 void ModGridSurface::press(int note) {
     GuiApp &gui = *app->gui;
-    int pageCount = browsePageCount();
-    if (note >= 0 && note < 8) {
-        if (note < (int)pages.get().size()) page = note;
-        return;
-    }
-    // A group's button: to the group, at the page it was last on; pressed again, its next page
-    for (int g = 0; g < N_GROUP_NOTES; ++g) {
-        if (note != GROUP_NOTES[g]) continue;
-        auto all = groups();
-        if (g >= (int)all.size()) return;
-        const vector<int> &groupPages = all[g].second;
-        auto at = std::find(groupPages.begin(), groupPages.end(), page);
-        if (at != groupPages.end()) {
-            page = groupPages[(at - groupPages.begin() + 1) % groupPages.size()];
-        } else {
-            int last = lastPageInGroup.count(all[g].first) ? lastPageInGroup[all[g].first] : groupPages[0];
-            page = std::find(groupPages.begin(), groupPages.end(), last) != groupPages.end() ? last : groupPages[0];
-        }
-        lastPageInGroup[all[g].first] = page;
-        return;
-    }
     LightingLayer &lighting = *app->lighting;
+    bool lightsGrid = modes[mode].browse < 0;
+    if (note >= FIRST_MODE_NOTE && note < FIRST_MODE_NOTE + N_MODES) {
+        selectMode(note - FIRST_MODE_NOTE);
+        return;
+    }
+    if (lightsGrid && note >= FIRST_LIGHT_KEY && note < FIRST_LIGHT_KEY + LIGHTING_N_LIGHTS) {
+        lighting.selected = note - FIRST_LIGHT_KEY + 1;
+        return;
+    }
     switch (note) {
         case 92: app->stateManager->noteToSceneParams(0); break;   // previous track
         case 93: app->stateManager->noteToSceneParams(1); break;   // next track
@@ -265,21 +282,24 @@ void ModGridSurface::press(int note) {
         }
         case ENGINE_A_NOTE: gui.engineA = (gui.engineA + 1) % 3; break;
         case ENGINE_B_NOTE: gui.engineB = (gui.engineB + 1) % 3; break;
-        case 108: case 109: case 110: case 111: {
-            browse = note - 108;
-            if (browse == BROWSE_MILKDROP && milkdropPresets.empty()) scanMilkdrop();
-            // Open on the page with the current item
-            int current = browseCurrent();
-            if (current >= 0) browsePage[browse] = current / 64;
-            break;
-        }
-        case 114: browsePage[browse] = std::max(browsePage[browse] - 1, 0); break;
-        case 115: browsePage[browse] = std::min(browsePage[browse] + 1, pageCount - 1); break;
+        case MIXER_NOTE: mixerShown = !mixerShown; break;
+        case UP_NOTE: pageInGroup[dialGroup()] = std::max(groupPosition() - 1, 0); break;
+        case DOWN_NOTE: pageInGroup[dialGroup()] = std::min(groupPosition() + 1, (int)groupPages().size() - 1); break;
+        case LEFT_NOTE: if (!lightsGrid) browsePage[browse] = std::max(browsePage[browse] - 1, 0); break;
+        case RIGHT_NOTE: if (!lightsGrid) browsePage[browse] = std::min(browsePage[browse] + 1, browsePageCount() - 1); break;
     }
 }
 
 void ModGridSurface::pressPad(int row, int column) {
     if (row >= 8 || column >= 8) return;
+    // Lights mode: the pad is where the selected light goes, the grid spanning the picture
+    if (modes[mode].browse < 0) {
+        LightingLayer &lighting = *app->lighting;
+        Light &light = lighting.lights[(int)ofClamp(lighting.selected - 1, 0, LIGHTING_N_LIGHTS - 1)];
+        light.x = ofLerp(light.x.getMin(), light.x.getMax(), (column + 0.5f) / 8);
+        light.y = ofLerp(light.y.getMin(), light.y.getMax(), (row + 0.5f) / 8);
+        return;
+    }
     int item = browsePage[browse] * 64 + row * 8 + column;
     if (item < browseCount()) browseLoad(item);
 }
@@ -350,7 +370,7 @@ void ModGridSurface::refresh() {
 
 void ModGridSurface::sendFeedback() {
     const vector<ControlPage> &all = pages.get();
-    const ControlPage &current = all[page];
+    const ControlPage &current = all[currentPage()];
 
     // The dials: this page's parameters
     for (int cc = 0; cc < 16; ++cc) {
@@ -370,35 +390,12 @@ void ModGridSurface::sendFeedback() {
     sendText(SYSEX_DIAL_NAME, MAIN_CHANNEL - 1, SPARE_CC, "");
     sendText(SYSEX_DIAL_VALUE, MAIN_CHANNEL - 1, SPARE_CC, "");
 
-    // The keys: the pages, this one lit
-    for (int key = 0; key < 8; ++key) {
-        bool used = key < (int)all.size();
-        sendColor(MAIN_CHANNEL, key, used ? sectionColor(all[key].section, key == page) : COLOR_OFF);
-        sendText(SYSEX_BUTTON_TEXT, MAIN_CHANNEL - 1, key, used ? all[key].name : "");
-    }
-
-    // The right strip: a button for each group of pages, the group on show lit, with the page and how many
-    auto pageGroups = groups();
-    for (int g = 0; g < N_GROUP_NOTES; ++g) {
-        if (g >= (int)pageGroups.size()) {
-            sendColor(MAIN_CHANNEL, GROUP_NOTES[g], COLOR_OFF);
-            sendText(SYSEX_BUTTON_TEXT, MAIN_CHANNEL - 1, GROUP_NOTES[g], "");
-            continue;
-        }
-        const vector<int> &groupPages = pageGroups[g].second;
-        auto at = std::find(groupPages.begin(), groupPages.end(), page);
-        bool showing = at != groupPages.end();
-        int shown = showing ? at - groupPages.begin() : 0;
-        string label = all[groupPages[shown]].name;
-        if (groupPages.size() > 1) label = all[groupPages[0]].name + " " + ofToString(shown + 1) + "/" + ofToString(groupPages.size());
-        sendColor(MAIN_CHANNEL, GROUP_NOTES[g], sectionColor(all[groupPages[0]].section, showing));
-        sendText(SYSEX_BUTTON_TEXT, MAIN_CHANNEL - 1, GROUP_NOTES[g], label);
-    }
-
-    // The buttons: switches lit while on, the browse mode lit, the page and set buttons dim when they can't move
+    // The buttons: switches lit while on, the mode lit, the arrows and set buttons dim when they can't move
     LightingLayer &lighting = *app->lighting;
-    int count = browseCount(), currentItem = browseCurrent(), pageCount = browsePageCount();
     PresetManager &presets = *app->presets;
+    bool lightsGrid = modes[mode].browse < 0;
+    int count = lightsGrid ? 0 : browseCount(), currentItem = lightsGrid ? -1 : browseCurrent();
+    int pageCount = lightsGrid ? 1 : browsePageCount(), position = groupPosition(), positions = groupPages().size();
     for (const SurfaceButton &button : buttons) {
         bool lit = true;
         const char *section = button.section;
@@ -407,11 +404,14 @@ void ModGridSurface::sendFeedback() {
             case 13: lit = gui.milkdropRunning; break;
             case 14: lit = gui.shaderRunning; break;
             case 16: case 17: case 18: case 19: lit = lighting.lights[button.note - 16].on; break;
-            case 108: case 109: case 110: case 111: lit = browse == button.note - 108; break;
-            case 114: lit = browsePage[browse] > 0; section = browseSections[browse]; break;
-            case 115: lit = browsePage[browse] < pageCount - 1; section = browseSections[browse]; break;
+            case MIXER_NOTE: lit = mixerShown; break;
+            case 33: case 34: case 35: case 36: case 37: lit = mode == button.note - FIRST_MODE_NOTE; break;
             case 40: lit = presets.setPosition > 0 && !presets.setEntries.empty(); break;
             case 41: lit = presets.setPosition < (int)presets.setEntries.size() - 1; break;
+            case UP_NOTE: lit = position > 0; section = current.section.c_str(); break;
+            case DOWN_NOTE: lit = position < positions - 1; section = current.section.c_str(); break;
+            case LEFT_NOTE: lit = !lightsGrid && browsePage[browse] > 0; section = modes[mode].section; break;
+            case RIGHT_NOTE: lit = !lightsGrid && browsePage[browse] < pageCount - 1; section = modes[mode].section; break;
         }
         sendColor(MAIN_CHANNEL, button.note, sectionColor(section, lit));
         sendText(SYSEX_BUTTON_TEXT, MAIN_CHANNEL - 1, button.note, button.label);
@@ -426,21 +426,59 @@ void ModGridSurface::sendFeedback() {
         sendColor(MAIN_CHANNEL, note, COLOR_OFF);
         sendText(SYSEX_BUTTON_TEXT, MAIN_CHANNEL - 1, note, "");
     }
-
-    // The grid: this page of the browse list, each pad with its item's name, the current item white
-    for (int row = 0; row < 8; ++row) {
-        for (int column = 0; column < 8; ++column) {
-            int item = browsePage[browse] * 64 + row * 8 + column;
-            int color = item >= count ? COLOR_OFF : item == currentItem ? COLOR_WHITE : sectionColor(browseSections[browse], false);
-            sendColor(PAD_CHANNEL_LOW, row * 16 + column, color);
-            sendText(SYSEX_BUTTON_TEXT, PAD_CHANNEL_LOW - 1, row * 16 + column, item < count ? padName(browseName(item)) : "");
-        }
+    for (int key = 0; key < 8; ++key) {   // the keys, which this layout doesn't show
+        sendColor(MAIN_CHANNEL, key, COLOR_OFF);
+        sendText(SYSEX_BUTTON_TEXT, MAIN_CHANNEL - 1, key, "");
     }
 
-    // The browse mode and page
-    sendText(SYSEX_BUTTON_TEXT, MAIN_CHANNEL - 1, BROWSE_INFO_NOTE,
-             string(browseNames[browse]) + " " + ofToString(browsePage[browse] + 1) + "/" + ofToString(pageCount));
-    sendColor(MAIN_CHANNEL, BROWSE_INFO_NOTE, sectionColor(browseSections[browse], true));
+    // Above the grid: the light keys in lights mode, then the dial page and the grid's page
+    int selected = ofClamp(lighting.selected - 1, 0, LIGHTING_N_LIGHTS - 1);
+    for (int i = 0; i < LIGHTING_N_LIGHTS; ++i) {
+        sendColor(MAIN_CHANNEL, FIRST_LIGHT_KEY + i, lightsGrid ? sectionColor("Lights", i == selected) : COLOR_OFF);
+        sendText(SYSEX_BUTTON_TEXT, MAIN_CHANNEL - 1, FIRST_LIGHT_KEY + i, lightsGrid ? "move " + string(1, 'A' + i) : "");
+    }
+    sendColor(MAIN_CHANNEL, DIAL_PAGE_NOTE, sectionColor(current.section, true));
+    sendText(SYSEX_BUTTON_TEXT, MAIN_CHANNEL - 1, DIAL_PAGE_NOTE,
+             all[groupPages().front()].name + " " + ofToString(position + 1) + "/" + ofToString(positions));
+    sendColor(MAIN_CHANNEL, GRID_PAGE_NOTE, sectionColor(modes[mode].section, true));
+    sendText(SYSEX_BUTTON_TEXT, MAIN_CHANNEL - 1, GRID_PAGE_NOTE,
+             lightsGrid ? "light " + string(1, 'A' + selected)
+                        : string(modes[mode].name) + " " + ofToString(browsePage[browse] + 1) + "/" + ofToString(pageCount));
+
+    // The grid: in lights mode, where the lights are (the selected one white, the others lit while on);
+    // otherwise this page of the browse list, each pad with its item's name, the current item white
+    int lightPads[LIGHTING_N_LIGHTS];
+    for (int i = 0; i < LIGHTING_N_LIGHTS; ++i) {
+        Light &light = lighting.lights[i];
+        int column = ofClamp((int)(ofMap(light.x, light.x.getMin(), light.x.getMax(), 0, 1) * 8), 0, 7);
+        int row = ofClamp((int)(ofMap(light.y, light.y.getMin(), light.y.getMax(), 0, 1) * 8), 0, 7);
+        lightPads[i] = row * 8 + column;
+    }
+    for (int row = 0; row < 8; ++row) {
+        for (int column = 0; column < 8; ++column) {
+            int note = row * 16 + column, color = COLOR_OFF;
+            string text;
+            if (lightsGrid) {
+                // On a pad two lights share, the selected one shows, else the first
+                int shown = lightPads[selected] == row * 8 + column ? selected : -1;
+                for (int i = 0; i < LIGHTING_N_LIGHTS && shown < 0; ++i) {
+                    if (lightPads[i] == row * 8 + column) shown = i;
+                }
+                if (shown >= 0) {
+                    color = shown == selected ? COLOR_WHITE : sectionColor("Lights", lighting.lights[shown].on);
+                    text = string(1, 'A' + shown);
+                }
+            } else {
+                int item = browsePage[browse] * 64 + row * 8 + column;
+                if (item < count) {
+                    color = item == currentItem ? COLOR_WHITE : sectionColor(modes[mode].section, false);
+                    text = padName(browseName(item));
+                }
+            }
+            sendColor(PAD_CHANNEL_LOW, note, color);
+            sendText(SYSEX_BUTTON_TEXT, PAD_CHANNEL_LOW - 1, note, text);
+        }
+    }
 }
 
 void ModGridSurface::sendColor(int channel, int note, int color) {

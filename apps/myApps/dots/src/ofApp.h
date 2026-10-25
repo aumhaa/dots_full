@@ -159,6 +159,8 @@ public:
     void freeze(FrozenFrame &frozen, ofFbo &source, float seconds);
     float appliedPresetDuration = -1;   // GUI settings last passed to projectM
     int appliedLockPreset = -1, appliedShuffle = -1, appliedShaderMedia = 0;
+    float appliedTransition = -1, appliedBeatSensitivity = -1, appliedHardCutSensitivity = -1, appliedHardCutSeconds = -1;
+    int appliedHardCuts = -1, appliedMeshSize = -1, appliedAspectCorrection = -1;
 
     // The GUI window
     shared_ptr<GuiApp> gui;

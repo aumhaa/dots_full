@@ -230,6 +230,29 @@ void ofApp::guiUpdate() {
         appliedShuffle = gui->milkdropShuffle;
         projectM.setShuffle(appliedShuffle);
     }
+    if (gui->milkdropTransitionSeconds != appliedTransition) {
+        appliedTransition = gui->milkdropTransitionSeconds;
+        projectM.setSoftCutDuration(appliedTransition);
+    }
+    if (gui->milkdropBeatSensitivity != appliedBeatSensitivity) {
+        appliedBeatSensitivity = gui->milkdropBeatSensitivity;
+        projectM.setBeatSensitivity(appliedBeatSensitivity);
+    }
+    if (gui->milkdropHardCuts != appliedHardCuts || gui->milkdropHardCutSensitivity != appliedHardCutSensitivity ||
+        gui->milkdropHardCutSeconds != appliedHardCutSeconds) {
+        appliedHardCuts = gui->milkdropHardCuts;
+        appliedHardCutSensitivity = gui->milkdropHardCutSensitivity;
+        appliedHardCutSeconds = gui->milkdropHardCutSeconds;
+        projectM.setHardCuts(appliedHardCuts, appliedHardCutSensitivity, appliedHardCutSeconds);
+    }
+    if (gui->milkdropMeshSize != appliedMeshSize) {
+        appliedMeshSize = gui->milkdropMeshSize;
+        projectM.setMeshSize(appliedMeshSize);
+    }
+    if (gui->milkdropAspectCorrection != appliedAspectCorrection) {
+        appliedAspectCorrection = gui->milkdropAspectCorrection;
+        projectM.setAspectCorrection(appliedAspectCorrection);
+    }
     gui->mpx = mpx;
     gui->mpy = mpy;
     gui->audioCentroid = audioCentroid;

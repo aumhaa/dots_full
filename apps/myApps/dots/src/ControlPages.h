@@ -27,7 +27,7 @@ struct ControlEntry {
 };
 
 struct ControlPage {
-    string group;   // pages of one group share a button: a press goes to the group, another to its next page
+    string group;   // a mode's pages (flames, milk, shader, lights, sets) or the mixer's, stepped through in order
     string name, section;
     vector<ControlEntry> entries;   // at most 16
 };

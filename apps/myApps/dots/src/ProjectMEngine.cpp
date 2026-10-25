@@ -135,6 +135,25 @@ void ProjectMEngine::setSoftCutDuration(double seconds) {
     if (projectM) projectm_set_soft_cut_duration(projectM, seconds);
 }
 
+void ProjectMEngine::setBeatSensitivity(float sensitivity) {
+    if (projectM) projectm_set_beat_sensitivity(projectM, sensitivity);
+}
+
+void ProjectMEngine::setHardCuts(bool enabled, float sensitivity, double seconds) {
+    if (!projectM) return;
+    projectm_set_hard_cut_enabled(projectM, enabled);
+    projectm_set_hard_cut_sensitivity(projectM, sensitivity);
+    projectm_set_hard_cut_duration(projectM, seconds);
+}
+
+void ProjectMEngine::setMeshSize(int across) {
+    if (projectM) projectm_set_mesh_size(projectM, across, std::max(1, across * 3 / 4));
+}
+
+void ProjectMEngine::setAspectCorrection(bool enabled) {
+    if (projectM) projectm_set_aspect_correction(projectM, enabled);
+}
+
 void ProjectMEngine::loadPresetFile(const string &path, bool smooth) {
     if (!projectM || !ofFile::doesFileExist(path, false)) return;
     projectm_load_preset_file(projectM, path.c_str(), smooth);

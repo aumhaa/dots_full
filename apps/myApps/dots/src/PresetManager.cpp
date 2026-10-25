@@ -200,7 +200,7 @@ void PresetManager::applyModule(int module, const ofJson &state, float fade) {
             // projectM's own blend, stretched to the fade
             if (fade > 0) {
                 app.projectM.setSoftCutDuration(fade);
-                fader.atEnd([this]() { app.projectM.setSoftCutDuration(3); });
+                fader.atEnd([this]() { app.projectM.setSoftCutDuration(app.gui->milkdropTransitionSeconds); });
             }
             app.projectM.loadPresetFile(path, fade > 0);
             break;

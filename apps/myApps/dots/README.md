@@ -197,22 +197,27 @@ ModGrid script must not be bound to the same port** while dots has it. The
 Bridge app has to be running; dots looks for the port every few seconds.
 `DOTS_MODGRID_PORT=<text>` picks a port by name.
 
-- **16 dials**: a page of dots's parameters, with their names and values on the
-  iPad. The four buttons under the browse label on the right pick the group of
-  pages, and a second press steps through it: Flames (2 pages: drawing, then
-  motion, effect sizes and the block locks), Mixer (with MilkDrop's timing),
-  Shader (the shader's own inputs over one or two pages, then kinds, media and
-  alpha), Lights (intensity, hue and size, then saturation, position and focus).
-  Layouts that show the 8 keys can pick a page directly with them.
-- **Left column**: the crossfader (top dial), engine A and B (each press steps
-  it), lights A-D on/off, then flames, MilkDrop and shader on/off, lit while on.
-- **Buttons above the dials** (92-99): track, scene, MilkDrop and shader
-  previous/next. **Bottom row**: what the grid browses (sets, shaders,
-  MilkDrop, flames scenes), and the grid's page back and forward (the last two),
-  dim when there's no further page. **Right column**: set previous and next.
-- **The 8x8 grid** browses that list, 64 to a page, each pad with a short
-  name, the current item white; press a pad to load it. The right strip's top
-  button shows the list and the page.
+- **Modes** (the right strip's top five buttons): flames, milk, shader, lights,
+  sets. A mode puts its parameters on the 16 dials (names and values on the
+  iPad) and its list on the grid: flames scenes, MilkDrop presets, shaders,
+  set entries, 64 to a page, each pad with a short name, the current item
+  white; press a pad to load it. In **lights** mode the grid is the picture:
+  press a pad to move the selected light there; the four buttons above the
+  grid's left half pick which light, and each light shows as its letter.
+- **Arrows** (right strip): up/down step through the mode's dial pages,
+  left/right page the grid; each dims when it can't go further. The button
+  over the last key shows the dial page ("Flames 1/2"), the last key the grid's
+  page ("milk 34/154").
+- **Left column**: mixer (top button: the mixer's dials over the mode's,
+  pressed again to go back), the crossfader (top dial), engine A and B (each
+  press steps it), lights A-D on/off, then flames, MilkDrop and shader on/off,
+  lit while on.
+- **Buttons above the dials**: track, scene, MilkDrop and shader previous/next.
+  **Right column**: set previous and next, dim at either end.
+
+The MilkDrop page has projectM's own settings too (also in the MilkDrop panel):
+transition time, beat sensitivity, hard cuts on a loud beat with their
+sensitivity and minimum interval, the warp mesh size and aspect correction.
 
 The pages come from `src/ControlPages.cpp`, which is meant to grow into the
 parameter layer every UI shares.

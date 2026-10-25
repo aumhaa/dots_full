@@ -81,6 +81,13 @@ void GuiApp::setup() {
     milkdropParams.add(milkdropPresetDuration.set("presetSeconds", 30, 5, 120));
     milkdropParams.add(milkdropLockPreset.set("lockPreset", false));
     milkdropParams.add(milkdropShuffle.set("shuffle", true));
+    milkdropParams.add(milkdropTransitionSeconds.set("transitionSeconds", 3, 0, 10));
+    milkdropParams.add(milkdropBeatSensitivity.set("beatSensitivity", 1, 0, 5));
+    milkdropParams.add(milkdropHardCuts.set("hardCuts", false));
+    milkdropParams.add(milkdropHardCutSensitivity.set("hardCutSensitivity", 2, 0, 5));
+    milkdropParams.add(milkdropHardCutSeconds.set("hardCutSeconds", 20, 1, 60));
+    milkdropParams.add(milkdropMeshSize.set("meshSize", 64, 16, 128));
+    milkdropParams.add(milkdropAspectCorrection.set("aspectCorrection", true));
     milkdropGui.setup(milkdropParams);
     milkdropGui.add(prevPresetBtn.setup("Prev preset  ["));
     milkdropGui.add(nextPresetBtn.setup("Next preset  ]"));

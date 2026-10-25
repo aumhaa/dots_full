@@ -8,18 +8,21 @@
 //  Sim" pair) and speaks the same protocol (docs in the modGrid repo:
 //  modgrid-script-structure.md and protocol-mpe-v1.md).
 //
-//    16 dials (CC 0-15)        a page of dots's parameters (ControlPages), with
-//                              their names and values shown on the iPad
-//    right strip 34-37         a button for each group of pages (a second press
-//                              steps through the group); 8 keys (notes 0-7) pick
-//                              a page directly where a layout shows them
+//    right strip 33-37         the modes: flames, milk, shader, lights, sets. A
+//                              mode puts its parameters on the dials and its
+//                              list on the grid (flames scenes, MilkDrop presets,
+//                              shaders, set entries); in lights mode the grid
+//                              places the selected light, keys 108-111 pick it
+//    16 dials (CC 0-15)        a page of the mode's parameters (ControlPages),
+//                              with their names and values on the iPad
+//    arrows 70/73, 71/72       up/down the dial pages, left/right the grid's;
+//                              dim when they can't go further. 107 shows the
+//                              dial page, 115 the grid's
+//    left column               mixer dials (15), crossfader (CC 17), engine A/B
+//                              (11, 32), lights A-D on/off (16-19), flames,
+//                              MilkDrop and shader on/off (12-14)
 //    buttons 92-99             previous/next track, scene, MilkDrop, shader
-//    buttons 108-111, 114/115  what the grid browses, and its page (dim at the end)
-//    left column               crossfader (CC 17), engine A/B (11, 32), lights
-//                              A-D on/off (16-19), flames/MilkDrop/shader (12-14)
 //    right strip 40/41         previous/next in the set
-//    the 8x8 grid              browse: set entries, shaders, MilkDrop presets,
-//                              flames scenes, each pad named
 //
 //  Main controls are on channel 15 and the grid on 13 and 14 (0-based). Colours
 //  are modGrid palette numbers, sent as the velocity of a note back on the
@@ -68,7 +71,12 @@ private:
     string browseName(int item) const;
     void browseLoad(int item);
     void scanMilkdrop();
-    vector<pair<string, vector<int>>> groups() const;   // the groups of dial pages, each with its pages
+    void selectMode(int which);
+    // The dial pages on show: their group, its pages, which of them, and that page's index in pages
+    string dialGroup() const;
+    vector<int> groupPages() const;
+    int groupPosition() const;
+    int currentPage() const;
 
     // Sending, each only when it changed since it was last sent
     void sendColor(int channel, int note, int color);
@@ -86,9 +94,11 @@ private:
     std::mutex mutex;
     vector<ofxMidiMessage> received;   // from the MIDI thread, for update()
 
-    int page = 0, browse = BROWSE_SHADERS;
+    enum { N_MODES = 5 };
+    int mode = 0, browse = BROWSE_SCENES;
+    bool mixerShown = false;           // the mixer's dials, over the mode's
     int browsePage[N_BROWSE] = {0, 0, 0, 0};
-    std::map<string, int> lastPageInGroup;
+    std::map<string, int> pageInGroup;   // group -> the page it's on
     vector<string> milkdropPresets;    // relative to the presets folder
 
     std::map<int, int> sentColors;     // (channel << 8 | note) -> palette index

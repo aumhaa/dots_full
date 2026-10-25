@@ -151,7 +151,7 @@ void ControlPages::build() {
         {"wandering", "Wander", &gui.wandering},
         {"fade frames", "Wander", &gui.fadeFrames},
     }});
-    // The mixer and MilkDrop share a page; the engines' on/off switches are buttons
+    // The engines' on/off switches are buttons
     pages.push_back({"mixer", "Mixer", "Mixer", {
         {"crossfade A-B", "Mixer", &gui.crossfade},
         {"engine A", "Mixer", &gui.engineA},
@@ -161,9 +161,25 @@ void ControlPages::build() {
         {"audio mode", "Audio Analysis", &gui.audioMode},
         {"lights on feed A", "Lights", &lighting.feedAIncludesLights},
         {"feed B source", "Lights", &lighting.feedBSource},
-        {"milk seconds", "MilkDrop", &gui.milkdropPresetDuration},
-        {"milk lock preset", "MilkDrop", &gui.milkdropLockPreset},
-        {"milk shuffle", "MilkDrop", &gui.milkdropShuffle},
+    }});
+    pages.push_back({"milk", "MilkDrop", "MilkDrop", {
+        {"preset seconds", "MilkDrop", &gui.milkdropPresetDuration},
+        {"lock preset", "MilkDrop", &gui.milkdropLockPreset},
+        {"shuffle", "MilkDrop", &gui.milkdropShuffle},
+        {"transition secs", "MilkDrop", &gui.milkdropTransitionSeconds},
+        {"beat sensitivity", "MilkDrop", &gui.milkdropBeatSensitivity},
+        {"hard cuts", "MilkDrop", &gui.milkdropHardCuts},
+        {"hard cut sens", "MilkDrop", &gui.milkdropHardCutSensitivity},
+        {"hard cut secs", "MilkDrop", &gui.milkdropHardCutSeconds},
+        {"mesh size", "MilkDrop", &gui.milkdropMeshSize},
+        {"aspect correct", "MilkDrop", &gui.milkdropAspectCorrection},
+    }});
+    // Sets have no settings of their own: the fade between entries and what's on the mixer
+    pages.push_back({"sets", "Sets", "Sets", {
+        {"preset fade", "Sets", &gui.presetFadeSeconds},
+        {"engine A", "Mixer", &gui.engineA},
+        {"engine B", "Mixer", &gui.engineB},
+        {"crossfade A-B", "Mixer", &gui.crossfade},
     }});
 
     vector<ControlEntry> inputs;

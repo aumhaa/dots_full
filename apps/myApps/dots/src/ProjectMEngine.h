@@ -40,6 +40,10 @@ public:
     // Loads one preset file; smooth blends it in over the soft-cut duration
     void loadPresetFile(const string &path, bool smooth);
     void setSoftCutDuration(double seconds);
+    void setBeatSensitivity(float sensitivity);
+    void setHardCuts(bool enabled, float sensitivity, double seconds);
+    void setMeshSize(int across);   // 3/4 of it down
+    void setAspectCorrection(bool enabled);
     bool isReady() { return projectM != nullptr; }
 
 private:
