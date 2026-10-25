@@ -103,6 +103,8 @@ public:
     void saveLightsPressed();
     void loadLightsPressed();
     ofRectangle previewRect;     // where the preview was last drawn
+    // The preview's box (two panel columns wide) and the audio box under it, the same width
+    static constexpr float PREVIEW_TOP = 27, PREVIEW_WIDTH = 410, PREVIEW_HEIGHT = 280, AUDIO_HEIGHT = 100;
     int draggedLight = -1;
     void mousePressed(int x, int y, int button);
     void mouseDragged(int x, int y, int button);

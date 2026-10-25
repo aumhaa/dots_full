@@ -190,32 +190,34 @@ void GuiApp::setup() {
         }
     }
 
-    inputGui.setPosition(10, 450);
-    milkdropGui.setPosition(inputGui.getPosition().x, inputGui.getPosition().y + inputGui.getHeight() + 10);
-    debugGui.setPosition(inputGui.getPosition().x + inputGui.getWidth() + 10, inputGui.getPosition().y);
-    metaGui.setPosition(debugGui.getPosition().x, debugGui.getPosition().y + debugGui.getHeight() + 10);
-    trackParamsGui.setPosition(510, 75);
-    trackControlGui.setPosition(trackParamsGui.getPosition().x, trackParamsGui.getPosition().y + trackParamsGui.getHeight() + 10);
-    displayGui.setPosition(trackControlGui.getPosition().x + trackControlGui.getWidth() + 10, 15);
-    locksGui.setPosition(trackControlGui.getPosition().x, trackControlGui.getPosition().y + trackControlGui.getHeight() + 10);
-    lightsGui.setPosition(displayGui.getPosition().x + displayGui.getWidth() + 10, 15);
-    mixerGui.setPosition(metaGui.getPosition().x, metaGui.getPosition().y + metaGui.getHeight() + 10);
-    shaderGui.setPosition(lightsGui.getPosition().x + lightsGui.getWidth() + 10, 15);
-    sheepGui.setPosition(mixerGui.getPosition().x, mixerGui.getPosition().y + mixerGui.getHeight() + 10);
+    // A grid of columns as wide as a panel. The preview and the audio under it span the first two,
+    // with Audio Input, Meta and MilkDrop under them; the tracks and the sheep; the scene, mixer
+    // and debug; the lights; the shader and its inputs. The window fits what's there.
+    sheepGui.getGroup(sheepEngine->audioParameters.getName()).minimize();
+    const float column = inputGui.getWidth() + 10;
+    auto x = [column](int k) { return 10 + k * column; };
+    auto below = [](ofxPanel &panel) { return panel.getPosition().y + panel.getHeight() + 10; };
+    const float underPreview = PREVIEW_TOP + PREVIEW_HEIGHT + 10 + AUDIO_HEIGHT + 10;
+    milkdropGui.setPosition(x(0), underPreview);
+    inputGui.setPosition(x(1), underPreview);
+    metaGui.setPosition(x(1), below(inputGui));
+    trackParamsGui.setPosition(x(2), 75);
+    trackControlGui.setPosition(x(2), below(trackParamsGui));
+    locksGui.setPosition(x(2), below(trackControlGui));
+    sheepGui.setPosition(x(2), below(locksGui));
+    displayGui.setPosition(x(3), 15);
+    mixerGui.setPosition(x(3), below(displayGui));
+    debugGui.setPosition(x(3), below(mixerGui));
+    lightsGui.setPosition(x(4), 15);
+    shaderGui.setPosition(x(5), 15);
 
-
-    float height = MAX(MAX(MAX(MAX(milkdropGui.getPosition().y + milkdropGui.getHeight() + 20,
-                       debugGui.getPosition().y + inputGui.getHeight()),
-                       metaGui.getPosition().y + metaGui.getHeight()),
-                       displayGui.getPosition().y + displayGui.getHeight()),
-                       trackControlGui.getPosition().y + trackControlGui.getHeight());
-    // Room for the lights panel with one light open
+    float height = 0;
+    for (ofxPanel *panel : {&milkdropGui, &metaGui, &sheepGui, &debugGui}) {
+        height = MAX(height, panel->getPosition().y + panel->getHeight() + 30);   // and a line of status
+    }
+    // Room for the lights panel with a second light open
     height = MAX(height, lightsGui.getPosition().y + lightsGui.getHeight() + 150);
-
-    height = MAX(height, mixerGui.getPosition().y + mixerGui.getHeight());
-
-    ofSetWindowShape(shaderGui.getPosition().x + shaderGui.getWidth() + 10,
-                     height + 10);
+    ofSetWindowShape(x(6), height);
 
     visuals = NULL;
     audioBuckets = NULL;
@@ -283,22 +285,22 @@ void GuiApp::draw() {
 
     if (stateManager->trackIdx >= 0) {
         sprintf(s, "track: %d / %lu", stateManager->trackIdx, stateManager->tracks.size()-1);
-        ofDrawBitmapString(s, 510, 25);
+        ofDrawBitmapString(s, trackParamsGui.getPosition().x, 25);
         sprintf(s, "scene: %d / %lu", stateManager->sceneIdx, stateManager->getTrack().scenes.size()-1);
-        ofDrawBitmapString(s, 510, 40);
+        ofDrawBitmapString(s, trackParamsGui.getPosition().x, 40);
 
         if (wandering) {
             ofNoFill();
-            ofDrawRectangle(510, 50, 100, 15);
+            ofDrawRectangle(trackParamsGui.getPosition().x, 50, 100, 15);
             ofFill();
-            ofDrawRectangle(510, 50, 100 * stateManager->activeTrack.interpAmt, 15);
+            ofDrawRectangle(trackParamsGui.getPosition().x, 50, 100 * stateManager->activeTrack.interpAmt, 15);
         } else if (stateManager->getGenomeInterpolation() > 0.001) {
             ofNoFill();
-            ofDrawRectangle(510, 50, 100, 15);
+            ofDrawRectangle(trackParamsGui.getPosition().x, 50, 100, 15);
             ofFill();
-            ofDrawRectangle(510, 50, 100 * stateManager->getGenomeInterpolation(), 15);
+            ofDrawRectangle(trackParamsGui.getPosition().x, 50, 100 * stateManager->getGenomeInterpolation(), 15);
         } else {
-            ofDrawBitmapString("Not wandering or fading", 510, 60);
+            ofDrawBitmapString("Not wandering or fading", trackParamsGui.getPosition().x, 60);
         }
     }
 
@@ -308,29 +310,31 @@ void GuiApp::draw() {
 
     if (visuals) {
         ofTranslate(0, margin);
-        // TODO fit visuals to a bounding box
-        
-        float scale = std::min(480.0 / visuals->getWidth(), 270.0 / visuals->getHeight());
+        // The preview, fitted to a box two columns wide, centred across it
+        float boxWidth = PREVIEW_WIDTH, boxHeight = PREVIEW_HEIGHT;
+        float scale = std::min((boxWidth - padding * 2) / visuals->getWidth(), (boxHeight - padding * 2) / visuals->getHeight());
         float width = visuals->getWidth() * scale;
         float height = visuals->getHeight() * scale;
+        float left = margin + (boxWidth - width) / 2, top = (boxHeight - height) / 2;
 
         ofFill();
         ofSetColor(255, 255);
-        ofDrawRectangle(margin, 0, width + padding * 2, height + padding * 2);
+        ofDrawRectangle(margin, 0, boxWidth, boxHeight);
         ofSetColor(0, 255);
-        ofDrawRectangle(margin + padding, padding, width, height);
+        ofDrawRectangle(left, top, width, height);
         ofSetColor(255, 255);
-        visuals->draw(margin + padding, padding, width, height);
-        previewRect.set(margin + padding, 17 + margin + padding, width, height);
+        visuals->draw(left, top, width, height);
+        previewRect.set(left, 17 + margin + top, width, height);
 
-        // Spotlight markers: beam outline and number, grey when off; the selected one gets a cross
+        // Spotlight markers for the lights that are on: beam outline and number; the selected one gets a cross
         ofPushStyle();
         ofNoFill();
         for (int i = 0; i < LIGHTING_N_LIGHTS; ++i) {
             Light &light = lighting->lights[i];
-            float lx = margin + padding + light.x * width;
-            float ly = padding + light.y * height;
-            ofSetColor(light.on ? ofFloatColor::fromHsb(light.hue, std::max(0.4f, light.saturation.get()), 1) : ofFloatColor(0.5));
+            if (!light.on) continue;
+            float lx = left + light.x * width;
+            float ly = top + light.y * height;
+            ofSetColor(ofFloatColor::fromHsb(light.hue, std::max(0.4f, light.saturation.get()), 1));
             ofSetLineWidth(i + 1 == lighting->selected ? 2 : 1);
             ofDrawCircle(lx, ly, light.size * height);
             if (i + 1 == lighting->selected) {
@@ -341,11 +345,11 @@ void GuiApp::draw() {
         }
         ofPopStyle();
 
-        ofTranslate(0, 270 + padding * 2);
+        ofTranslate(0, PREVIEW_HEIGHT);
     }
     
     if (audioBuckets) {
-        ofTranslate(0, 100 + margin);
+        ofTranslate(0, AUDIO_HEIGHT + margin);
 
         ofPushStyle();
 
@@ -353,7 +357,8 @@ void GuiApp::draw() {
         ofNoFill();
         ofSetLineWidth(1);
         
-        float fftWidth = 415.0, fftHeight = 100;
+        // As wide as the preview, the mpx and mpy meters inside its right edge
+        float fftWidth = PREVIEW_WIDTH - 70, fftHeight = AUDIO_HEIGHT;
         float fftBucketWidth = fftWidth / nAudioBuckets;
         
         ofPushMatrix();
@@ -416,25 +421,28 @@ void GuiApp::draw() {
     sheepGui.draw();
     ofSetColor(255);
     string sheepStatus = (sheepPaused ? "paused; " : "") + sheepEngine->getStatus();
-    ofDrawBitmapString(sheepStatus.substr(0, 38), sheepGui.getPosition().x, sheepGui.getPosition().y + sheepGui.getHeight() + 14);
+    ofDrawBitmapString(sheepStatus.substr(0, 25), sheepGui.getPosition().x, sheepGui.getPosition().y + sheepGui.getHeight() + 14);
+    if (sheepStatus.size() > 25) {
+        ofDrawBitmapString(sheepStatus.substr(25, 25), sheepGui.getPosition().x, sheepGui.getPosition().y + sheepGui.getHeight() + 28);
+    }
     ofSetColor(255);
     float statusY = shaderGui.getPosition().y + shaderGui.getHeight() + 14;
     // The shader's number and name, over two lines if needed
     string status = shaderEngine->getStatus();
-    ofDrawBitmapString(status.substr(0, 26), shaderGui.getPosition().x, statusY);
-    if (status.size() > 26) {
-        ofDrawBitmapString(status.substr(26, 26), shaderGui.getPosition().x, statusY + 14);
+    ofDrawBitmapString(status.substr(0, 25), shaderGui.getPosition().x, statusY);
+    if (status.size() > 25) {
+        ofDrawBitmapString(status.substr(25, 25), shaderGui.getPosition().x, statusY + 14);
     }
     // Media a scene doesn't read is marked, so it's clear why it doesn't show
     MediaInput &media = shaderEngine->getMedia();
     bool unused = media.getKind() != MediaInput::NONE && !shaderEngine->currentUsesMedia();
     string mediaLine = (shaderPaused ? "paused; " : "") + string(unused ? "unused: " : "media: ") + media.describe();
-    ofDrawBitmapString(mediaLine.substr(0, 26), shaderGui.getPosition().x, statusY + 28);
+    ofDrawBitmapString(mediaLine.substr(0, 25), shaderGui.getPosition().x, statusY + 28);
     shaderInputsGui.draw();
     milkdropGui.draw();
     if (!milkdropPresetName.empty()) {
         ofSetColor(255);
-        ofDrawBitmapString(milkdropPresetName.substr(0, 38),
+        ofDrawBitmapString(milkdropPresetName.substr(0, 25),
                            milkdropGui.getPosition().x, milkdropGui.getPosition().y + milkdropGui.getHeight() + 14);
     }
     debugGui.draw();

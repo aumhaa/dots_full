@@ -233,7 +233,7 @@ Bridge app has to be running; dots looks for the port every few seconds.
 `DOTS_MODGRID_PORT=<text>` picks a port by name until one is chosen in the
 library's MIDI tab.
 
-- **Modes** (the right strip: flames, milk, shader, lights, sheep, then sets
+- **Modes** (the right strip: flames, milk, shader, sheep, lights, then sets
   above Modul8). A mode puts its parameters on the 16 dials (names and values
   on the iPad) and its list on the grid: flames scenes, MilkDrop presets,
   shaders, sheep, set entries, 64 to a page, each pad with a short name, the current item
@@ -250,8 +250,8 @@ library's MIDI tab.
   page ("milk 34/154").
 - **Left column**: mixer (top button: the mixer's dials over the mode's,
   pressed again to go back), the crossfader (top dial), engine A and B (each
-  press steps it), lights A-D on/off, then flames, MilkDrop and shader on/off,
-  lit while on.
+  press steps it), flames, MilkDrop, shader and sheep on/off, then lights A-C
+  on/off, lit while on; light D's switch is in lights mode, next to its key.
 - **Buttons above the dials**: track, scene, MilkDrop and shader previous/next.
   In **sets** mode the first two keys step through the set, dim at either end.
 - **Modul8** (the right column's lower button) is a sixth mode: the 16 dials

@@ -8,7 +8,7 @@
 //  Sim" pair) and speaks the same protocol (docs in the modGrid repo:
 //  modgrid-script-structure.md and protocol-mpe-v1.md).
 //
-//    right strip 33-37, 40     the modes: flames, milk, shader, lights, sheep,
+//    right strip 33-37, 40     the modes: flames, milk, shader, sheep, lights,
 //                              sets. A mode puts its parameters on the dials and
 //                              its list on the grid (flames scenes, MilkDrop
 //                              presets, shaders, sheep, set entries); in lights
@@ -20,8 +20,8 @@
 //                              dim when they can't go further. 107 shows the
 //                              dial page, 115 the grid's
 //    left column               mixer dials (15), crossfader (CC 17), engine A/B
-//                              (11, 32), lights A-D on/off (16-19), flames,
-//                              MilkDrop and shader on/off (12-14)
+//                              (11, 32), flames, MilkDrop, shader and sheep
+//                              on/off (16-19), lights A-C on/off (12-14)
 //    buttons 92-99             previous/next track, scene, MilkDrop, shader
 //    right strip 41            Modul8's mode: the dials and the two rows of
 //                              buttons above the grid go to Modul8's modGrid

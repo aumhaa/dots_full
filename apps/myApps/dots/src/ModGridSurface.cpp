@@ -37,10 +37,10 @@ static const SurfaceButton buttons[] = {
     // Above the dials
     {92, "track <", "Drawing"},   {93, "track >", "Drawing"},   {94, "scene <", "Drawing"},  {95, "scene >", "Drawing"},
     {96, "milk <", "MilkDrop"},   {97, "milk >", "MilkDrop"},   {98, "shader <", "Shader"},  {99, "shader >", "Shader"},
-    // Left column: the mixer's dials, the lights and the engines on or off
+    // Left column: the mixer's dials, the engines on or off, and lights A-C on or off (D is in lights mode)
     {15, "mixer", "Mixer"},
-    {16, "light A", "Lights"},    {17, "light B", "Lights"},    {18, "light C", "Lights"},   {19, "light D", "Lights"},
-    {12, "flames", "Drawing"},    {13, "MilkDrop", "MilkDrop"}, {14, "shader", "Shader"},
+    {16, "flames", "Drawing"},    {17, "MilkDrop", "MilkDrop"}, {18, "shader", "Shader"},    {19, "sheep", "Sheep"},
+    {12, "light A", "Lights"},    {13, "light B", "Lights"},    {14, "light C", "Lights"},
     // Right column (its mode buttons are the modes' own): the arrows, up/down the dial pages, left/right the grid's
     {70, "^", "Mixer"},           {73, "v", "Mixer"},           {71, "<", "Mixer"},          {72, ">", "Mixer"},
 };
@@ -50,7 +50,8 @@ static const int UP_NOTE = 70, LEFT_NOTE = 71, RIGHT_NOTE = 72, DOWN_NOTE = 73;
 static const int ENGINE_A_NOTE = 11, ENGINE_B_NOTE = 32, CROSSFADE_CC = 17, SPARE_CC = 16;
 // The two rows above the grid (100-115): Modul8's 16 buttons in its mode. Otherwise the dial page's
 // switches (100-106), lit while on, the dial page (over the last key) and the grid's page (the last
-// key); in lights mode the first four keys pick the light the grid moves, in sets mode the first two
+// key); in lights mode the first four keys pick the light the grid moves and the fifth turns light D
+// on or off (A-C are on the left column), in sets mode the first two
 // step through the set; the rest blank
 static const int FIRST_ROW_NOTE = 100, DIAL_PAGE_NOTE = 107, GRID_PAGE_NOTE = 115, FIRST_KEY = 108;
 static const char *engineNames[] = {"flames", "MilkDrop", "shader", "sheep"};
@@ -61,9 +62,9 @@ static const char *engineSections[] = {"Drawing", "MilkDrop", "Shader", "Sheep"}
 struct SurfaceMode { int note; const char *label, *group, *name, *section; int browse; };
 static const SurfaceMode modes[] = {
     {33, "flames", "flames", "scene", "Drawing", 3},     {34, "milk", "milk", "milk", "MilkDrop", 2},
-    {35, "shader", "shader", "shader", "Shader", 1},     {36, "lights", "lights", "light", "Lights", -1},
+    {35, "shader", "shader", "shader", "Shader", 1},     {37, "lights", "lights", "light", "Lights", -1},
     {40, "sets", "sets", "sets", "Sets", 0},             {41, "modul8", "modul8", "modul8", "Modul8", -1},
-    {37, "sheep", "sheep", "sheep", "Sheep", 4},
+    {36, "sheep", "sheep", "sheep", "Sheep", 4},
 };
 static const int N_MODES = sizeof(modes) / sizeof(modes[0]);
 static const int MODE_LIGHTS = 3, MODE_SETS = 4, MODE_MODUL8 = 5;
@@ -407,6 +408,11 @@ void ModGridSurface::press(int note) {
         lighting.selected = note - FIRST_KEY + 1;
         return;
     }
+    if (mode == MODE_LIGHTS && note == FIRST_KEY + LIGHTING_N_LIGHTS) {   // light D on or off, next to its key
+        ofParameter<bool> &on = lighting.lights[LIGHTING_N_LIGHTS - 1].on;
+        on = !on;
+        return;
+    }
     if (mode == MODE_SETS && (note == FIRST_KEY || note == FIRST_KEY + 1)) {
         if (note == FIRST_KEY) app->presets->previousInSet();
         else app->presets->nextInSet();
@@ -421,11 +427,12 @@ void ModGridSurface::press(int note) {
         case 97: app->projectM.nextPreset(); break;
         case 98: app->shaderEngine->previous(); break;
         case 99: app->shaderEngine->next(); break;
-        case 12: gui.flamesRunning = !gui.flamesRunning; break;
-        case 13: gui.milkdropRunning = !gui.milkdropRunning; break;
-        case 14: gui.shaderRunning = !gui.shaderRunning; break;
-        case 16: case 17: case 18: case 19: {
-            ofParameter<bool> &on = lighting.lights[note - 16].on;
+        case 16: gui.flamesRunning = !gui.flamesRunning; break;
+        case 17: gui.milkdropRunning = !gui.milkdropRunning; break;
+        case 18: gui.shaderRunning = !gui.shaderRunning; break;
+        case 19: gui.sheepRunning = !gui.sheepRunning; break;
+        case 12: case 13: case 14: {
+            ofParameter<bool> &on = lighting.lights[note - 12].on;
             on = !on;
             break;
         }
@@ -569,10 +576,11 @@ void ModGridSurface::sendFeedback() {
         bool lit = true;
         const char *section = button.section;
         switch (button.note) {
-            case 12: lit = gui.flamesRunning; break;
-            case 13: lit = gui.milkdropRunning; break;
-            case 14: lit = gui.shaderRunning; break;
-            case 16: case 17: case 18: case 19: lit = lighting.lights[button.note - 16].on; break;
+            case 16: lit = gui.flamesRunning; break;
+            case 17: lit = gui.milkdropRunning; break;
+            case 18: lit = gui.shaderRunning; break;
+            case 19: lit = gui.sheepRunning; break;
+            case 12: case 13: case 14: lit = lighting.lights[button.note - 12].on; break;
             case MIXER_NOTE: lit = mixerShown; break;
             case UP_NOTE: lit = position > 0; section = dialSection; break;
             case DOWN_NOTE: lit = position < positions - 1; section = dialSection; break;
@@ -622,6 +630,9 @@ void ModGridSurface::sendFeedback() {
         } else if (mode == MODE_LIGHTS && key >= 0 && key < LIGHTING_N_LIGHTS) {
             color = sectionColor("Lights", key == selected);
             text = "move " + string(1, 'A' + key);
+        } else if (mode == MODE_LIGHTS && key == LIGHTING_N_LIGHTS) {
+            color = sectionColor("Lights", lighting.lights[LIGHTING_N_LIGHTS - 1].on);
+            text = "light D";
         } else if (mode == MODE_SETS && (key == 0 || key == 1)) {
             bool canMove = key == 0 ? presets.setPosition > 0 && !presets.setEntries.empty()
                                     : presets.setPosition < (int)presets.setEntries.size() - 1;
