@@ -137,6 +137,7 @@ void GuiApp::setup() {
     mixerParams.add(engineA.set("A (flm/milk/shd/sheep)", ENGINE_FLAMES, ENGINE_FLAMES, ENGINE_SHEEP));
     mixerParams.add(engineB.set("B (flm/milk/shd/sheep)", ENGINE_MILKDROP, ENGINE_FLAMES, ENGINE_SHEEP));
     mixerParams.add(crossfade.set("crossfade A-B", 0, 0, 1));
+    mixerParams.add(crossfadeCentre.set("xfade centre level", 0.75, 0.5, 1));
     mixerParams.add(presetFadeSeconds.set("preset fade (s)", 2, 0, 10));
     mixerGui.setup(mixerParams);
 

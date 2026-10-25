@@ -20,7 +20,10 @@ the Syphon framework path.
 dots has four engines: the flames, MilkDrop, the shader engine (ISF and
 Synesthesia) and Electric Sheep. The Mixer panel puts one on A and one on B
 (0 flames, 1 MilkDrop, 2 shader, 3 sheep; CC 27 and CC 28) with a crossfade
-between them (CC 21). An engine only works while
+between them (CC 21). The two are added, each on a curve set by "xfade centre
+level": the level each side has with the crossfade in the middle. 0.5 is a
+plain linear mix, which dims in the middle; the default 0.75 keeps the middle
+about as bright as the ends (bright areas of both can clip to white). An engine only works while
 it's running and something shows it (the mixer, the lights' feed B, or for
 the shader its own Syphon feed); otherwise it holds its last frame.
 

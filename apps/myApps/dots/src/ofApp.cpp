@@ -1083,16 +1083,23 @@ void ofApp::draw(){
         flamesFading.end();
     }
 
-    // Mixer: A, then B over it at the crossfade
+    // Mixer: A and B added, each at its level on the crossfade's curve. Each side is
+    // (1 - x)^p or x^p, p chosen so the centre gives each the centre level: 0.5 is a plain
+    // linear mix (and dims in the middle), 0.75 keeps the middle about as bright as the ends
     int engineA = gui->engineA, engineB = gui->engineB;
+    float curve = std::log(ofClamp(gui->crossfadeCentre.get(), 0.5f, 1.0f)) / std::log(0.5f);
+    float levelA = engineB == engineA ? 1 : std::pow(1 - crossfade, curve);
+    float levelB = engineB == engineA ? 0 : std::pow(crossfade, curve);
     outputFbo.begin();
     ofClear(0, 255);
     ofEnableAlphaBlending();
-    ofSetColor(255);
+    ofSetColor(255 * levelA);
     engineFbo(engineA).draw(0, 0, outputFbo.getWidth(), outputFbo.getHeight());
-    if (engineB != engineA && crossfade > 0) {
-        ofSetColor(255, 255 * crossfade);
+    if (levelB > 0) {
+        ofEnableBlendMode(OF_BLENDMODE_ADD);
+        ofSetColor(255 * levelB);
         engineFbo(engineB).draw(0, 0, outputFbo.getWidth(), outputFbo.getHeight());
+        ofEnableAlphaBlending();
     }
     // A change of engines fades out from a frozen frame of the old picture
     if (outputFrozen.opacity() > 0) {

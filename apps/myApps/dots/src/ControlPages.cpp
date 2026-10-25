@@ -161,6 +161,7 @@ void ControlPages::build() {
         {"crossfade A-B", "Mixer", &gui.crossfade},
         {"engine A", "Mixer", &gui.engineA},
         {"engine B", "Mixer", &gui.engineB},
+        {"xfade centre", "Mixer", &gui.crossfadeCentre},
         {"preset fade", "Mixer", &gui.presetFadeSeconds},
         {"max fps", "Mixer", &gui.maxFps},
         {"audio mode", "Audio Analysis", &gui.audioMode},
