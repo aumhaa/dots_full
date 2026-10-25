@@ -131,6 +131,10 @@ string ProjectMEngine::getPresetPath() {
     return presetPath;
 }
 
+void ProjectMEngine::setSoftCutDuration(double seconds) {
+    if (projectM) projectm_set_soft_cut_duration(projectM, seconds);
+}
+
 void ProjectMEngine::loadPresetFile(const string &path, bool smooth) {
     if (!projectM || !ofFile::doesFileExist(path, false)) return;
     projectm_load_preset_file(projectM, path.c_str(), smooth);

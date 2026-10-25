@@ -103,6 +103,8 @@ void LibraryApp::draw() {
 }
 
 void LibraryApp::drawPresets() {
+    float fade = gui->presetFadeSeconds;
+    if (ImGui::SliderFloat("fade (s)", &fade, 0, 10, "%.1f")) gui->presetFadeSeconds = fade;
     ImGui::TextDisabled("Double-click a preset to recall it.");
     for (int m = 0; m < PRESET_N_MODULES; ++m) {
         drawModulePresets(m, moduleTitles[m]);

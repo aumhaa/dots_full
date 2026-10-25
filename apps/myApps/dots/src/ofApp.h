@@ -10,6 +10,7 @@
 #include "LightingLayer.h"
 #include "ShaderEngine.h"
 #include "PresetManager.h"
+#include "Fader.h"
 #include <functional>
 
 extern "C" {
@@ -113,6 +114,7 @@ public:
 
     // Audio analysis
     int nFftBuckets;
+    static const int audioBufferSize = 512;   // samples the FFT takes
     float *audioInput;
     float *fftOutput;
     float audioRMS, smoothedAudioRMS, rmsMultiple;
@@ -137,6 +139,19 @@ public:
     bool milkdropActive = false, shaderActive = false;
     bool shaderAnimatedOnly = true;
     ofFbo &engineFbo(int engine);
+
+    // Preset fades: values glide (fader); what can't fade live fades out from a frozen frame
+    Fader fader;
+    struct FrozenFrame {
+        ofFbo frame;
+        float start = 0, seconds = 0;
+        float opacity() const;   // 1 when frozen, easing to 0 over the fade
+    };
+    FrozenFrame flamesFrozen, outputFrozen;
+    ofFbo flamesFading;          // the flames with their frozen frame over them
+    void freezeFlames(float seconds);
+    void freezeOutput(float seconds);
+    void freeze(FrozenFrame &frozen, ofFbo &source, float seconds);
     float appliedPresetDuration = -1;   // GUI settings last passed to projectM
     int appliedLockPreset = -1, appliedShuffle = -1;
 

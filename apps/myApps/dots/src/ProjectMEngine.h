@@ -39,6 +39,7 @@ public:
     const string &getPresetsFolder() const { return presetsFolder; }
     // Loads one preset file; smooth blends it in over the soft-cut duration
     void loadPresetFile(const string &path, bool smooth);
+    void setSoftCutDuration(double seconds);
     bool isReady() { return projectM != nullptr; }
 
 private:

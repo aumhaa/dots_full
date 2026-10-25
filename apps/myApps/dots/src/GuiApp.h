@@ -64,6 +64,7 @@ public:
     // Mixer: an engine on each of A and B, and a crossfade between them
     ofParameterGroup mixerParams;
     ofParameter<float> crossfade;          // 0 all A, 1 all B
+    ofParameter<float> presetFadeSeconds;  // how long recalling a preset takes
     ofParameter<int> engineA, engineB;     // ENGINE_FLAMES, ENGINE_MILKDROP or ENGINE_SHADER
     ofxPanel mixerGui;
     bool milkdropPaused = false, shaderPaused = false;   // mirrored from ofApp

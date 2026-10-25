@@ -80,7 +80,7 @@ void ofApp::setup(){
     audioMode = AUDIO_MODE_MIC;
     ofSoundStreamListDevices();
     
-    int bufferSize = 512;
+    int bufferSize = audioBufferSize;
     soundStreamDevice = 0;
     nChannels = 1;
     startSoundStream(soundStreamDevice);
@@ -270,7 +270,7 @@ bool ofApp::startSoundStream(int deviceIdx) {
     settings.numInputChannels = nChannels;
     settings.numOutputChannels = 0;
     settings.sampleRate = 44100;
-    settings.bufferSize = 512;
+    settings.bufferSize = audioBufferSize;
     settings.numBuffers = 4;
 
     vector<ofSoundDevice> devices = soundStream.getDeviceList();
@@ -668,7 +668,9 @@ void ofApp::flameDraw() {
     // TODO: move this somewhere more rational
     const float t = stateManager->getGenomeInterpolation();
 
-    const int maxBucket = nFftBuckets * centroidMaxBucket;
+    // At least one bucket: centroidMax at 0 made this i % 0, which on Apple Silicon reads
+    // far past the spectrum's end
+    const int maxBucket = std::max(1, (int)(nFftBuckets * centroidMaxBucket));
     const int nSamplesBeforeSwap = (1.0f - t) * nsamples;
 
     totDotPixels = 0;
@@ -730,6 +732,7 @@ void ofApp::update(){
     vector<std::function<void()>> actions;
     actions.swap(pendingActions);
     for (auto &action : actions) action();
+    fader.update();
 
     // Handle our keypresses
     while (!keyPresses.empty()) {
@@ -756,8 +759,9 @@ void ofApp::update(){
         centroidN += fftOutput[i] * i;
         centroidD += fftOutput[i];
     }
-    float centroidBucket = centroidN / centroidD;
-    audioCentroid = fmin(centroidBucket / nFftBuckets, 1);
+    // Silence has no centroid: call it 0 (0/0 used to pin it, and mpx, at the top)
+    audioCentroid = centroidD > 1e-6f ? fmin(centroidN / centroidD / nFftBuckets, 1) : 0;
+    if (!std::isfinite(audioCentroid)) audioCentroid = 0;
 
     // Compute audio centroid mapping to useful space
     float centroidMapped = sqrt(ofMap(audioCentroid, 0, centroidMaxBucket, 0, 1, true)); // TODO: should we use sqrt here?
@@ -768,6 +772,8 @@ void ofApp::update(){
     // Note: this is very dependent on the tempo of the music.
     mpx += (centroidMapped - mpx) * mpxSmoothingFactor;
     mpy += (audioRMSMapped - mpy) * mpySmoothingFactor;
+    if (!std::isfinite(mpx)) mpx = 0;
+    if (!std::isfinite(mpy)) mpy = 0;
 
     stateManager->update();
     guiUpdate();
@@ -817,12 +823,17 @@ void ofApp::update(){
 
 //--------------------------------------------------------------
 void ofApp::audioIn(ofSoundBuffer & buffer){
-    // Mono input, so frames == samples
+    // Mono input, so frames == samples. A device may deliver more than the
+    // FFT's buffer holds, and a bad sample (NaN, inf) would stick in every
+    // running average below and in the genomes, killing the flames for good.
     float *input = buffer.getBuffer().data();
-    const int bufferSize = buffer.getNumFrames();
+    const int bufferSize = std::min((int)buffer.getNumFrames(), audioBufferSize);
 
     if (audioMode == AUDIO_MODE_MIC) {
-        memcpy(audioInput, input, sizeof(float) * bufferSize);
+        for (int i = 0; i < bufferSize; i++)
+            audioInput[i] = std::isfinite(input[i]) ? input[i] : 0;
+        for (int i = bufferSize; i < audioBufferSize; i++)
+            audioInput[i] = 0;
     } else if (audioMode == AUDIO_MODE_NOISE) {
         for (int i = 0; i < bufferSize; i++)
             audioInput[i] = ofRandom(-1, 1);
@@ -840,23 +851,27 @@ void ofApp::audioIn(ofSoundBuffer & buffer){
         for (int i = 0; i < fft->getBinSize(); ++i) {
             // TODO: in theory this should be 20, but 16 seems to work better.
             float val = ofClamp(16.0 * log10(fftAmplitude[i] + 1), 0.0, 1.0);
+            if (!std::isfinite(val)) val = 0;
             if (val > fftOutput[i] || fftDecayRate <= 0.01) {
                 fftOutput[i] = val;
             } else {
                 fftOutput[i] *= fftDecayRate;
             }
+            if (!std::isfinite(fftOutput[i])) fftOutput[i] = 0;
         }
         
         float newAudioRMS = 0.0;
         for (int i = 0; i < bufferSize; i++){
-            float sample = input[i] * 0.5;
+            float sample = audioInput[i] * 0.5;
             newAudioRMS += sample * sample;
         }
-        newAudioRMS /= bufferSize;
+        newAudioRMS /= std::max(bufferSize, 1);
         newAudioRMS = sqrt(newAudioRMS);
+        if (!std::isfinite(newAudioRMS)) newAudioRMS = 0;
 
         audioRMS = newAudioRMS;
         smoothedAudioRMS += (audioRMS - smoothedAudioRMS) * 0.3;
+        if (!std::isfinite(smoothedAudioRMS)) smoothedAudioRMS = 0;
     }
 
     // MilkDrop hears the same signal as the flames (silence when there's no audio)
@@ -967,6 +982,21 @@ void ofApp::draw(){
         shaderEngine->render();
     }
 
+    // A flames track change fades out from a frozen frame of the old track
+    if (flamesFrozen.opacity() > 0) {
+        if (!flamesFading.isAllocated() || flamesFading.getWidth() != visualsFbo.getWidth() || flamesFading.getHeight() != visualsFbo.getHeight()) {
+            flamesFading.allocate(visualsFbo.getWidth(), visualsFbo.getHeight(), GL_RGBA);
+        }
+        flamesFading.begin();
+        ofClear(0, 255);
+        ofEnableAlphaBlending();
+        ofSetColor(255);
+        visualsFbo.draw(0, 0);
+        ofSetColor(255, 255 * flamesFrozen.opacity());
+        flamesFrozen.frame.draw(0, 0);
+        flamesFading.end();
+    }
+
     // Mixer: A, then B over it at the crossfade
     int engineA = gui->engineA, engineB = gui->engineB;
     outputFbo.begin();
@@ -977,6 +1007,11 @@ void ofApp::draw(){
     if (engineB != engineA && crossfade > 0) {
         ofSetColor(255, 255 * crossfade);
         engineFbo(engineB).draw(0, 0, outputFbo.getWidth(), outputFbo.getHeight());
+    }
+    // A change of engines fades out from a frozen frame of the old picture
+    if (outputFrozen.opacity() > 0) {
+        ofSetColor(255, 255 * outputFrozen.opacity());
+        outputFrozen.frame.draw(0, 0, outputFbo.getWidth(), outputFbo.getHeight());
     }
     outputFbo.end();
 
@@ -1095,5 +1130,32 @@ void ofApp::windowResized(int w, int h){
 ofFbo &ofApp::engineFbo(int engine) {
     if (engine == ENGINE_MILKDROP) return projectM.getFbo();
     if (engine == ENGINE_SHADER) return shaderEngine->getFbo();
-    return visualsFbo;
+    return flamesFrozen.opacity() > 0 ? flamesFading : visualsFbo;
+}
+
+float ofApp::FrozenFrame::opacity() const {
+    if (seconds <= 0) return 0;
+    float t = ofClamp((ofGetElapsedTimef() - start) / seconds, 0, 1);
+    return 1 - t * t * (3 - 2 * t);
+}
+
+void ofApp::freeze(FrozenFrame &frozen, ofFbo &source, float seconds) {
+    if (!frozen.frame.isAllocated() || frozen.frame.getWidth() != source.getWidth() || frozen.frame.getHeight() != source.getHeight()) {
+        frozen.frame.allocate(source.getWidth(), source.getHeight(), GL_RGBA);
+    }
+    frozen.frame.begin();
+    ofClear(0, 255);
+    ofSetColor(255);
+    source.draw(0, 0);
+    frozen.frame.end();
+    frozen.start = ofGetElapsedTimef();
+    frozen.seconds = seconds;
+}
+
+void ofApp::freezeFlames(float seconds) {
+    freeze(flamesFrozen, visualsFbo, seconds);
+}
+
+void ofApp::freezeOutput(float seconds) {
+    freeze(outputFrozen, outputFbo, seconds);
 }

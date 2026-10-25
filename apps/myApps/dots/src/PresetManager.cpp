@@ -64,7 +64,7 @@ bool PresetManager::recall(int module, const string &name) {
         ofLogWarning("PresetManager") << "No " << moduleName(module) << " preset " << name;
         return false;
     }
-    apply(module, state);
+    apply(module, state, app.gui->presetFadeSeconds);
     ofLogNotice("PresetManager") << "Recalled " << moduleName(module) << " preset " << name;
     return true;
 }
@@ -139,54 +139,114 @@ ofJson PresetManager::capture(int module, bool globalIncludesLights) {
     return state;
 }
 
-void PresetManager::apply(int module, const ofJson &state) {
+void PresetManager::apply(int module, const ofJson &state, float fadeSeconds) {
+    app.fader.begin(fadeSeconds);
+    applyModule(module, state, fadeSeconds);
+}
+
+void PresetManager::applyModule(int module, const ofJson &state, float fade) {
     StateManager &sm = *app.stateManager;
     GuiApp &gui = *app.gui;
+    Fader &fader = app.fader;
 
     switch (module) {
         case PRESET_FLAMES: {
             int trackIndex = sm.trackIndexForId(state.value("track", -1));
-            if (trackIndex >= 0 && trackIndex != sm.trackIdx) sm.selectTrack(trackIndex);
             int scene = state.value("scene", -1);
-            if (scene >= 0 && scene != sm.sceneIdx) sm.selectScene(scene);
-            ofDeserialize(state, sm.activeScene.displayParameters);
-            ofDeserialize(state, sm.activeTrack.displayParameters);
+            bool sameScene = (trackIndex < 0 || trackIndex == sm.trackIdx) && (scene < 0 || scene == sm.sceneIdx);
+            if (trackIndex >= 0 && trackIndex != sm.trackIdx) {
+                // Another track: the old flames fade out from a frozen frame
+                if (fade > 0) app.freezeFlames(fade);
+                sm.selectTrack(trackIndex);
+                if (scene >= 0) sm.selectScene(scene);
+            } else if (scene >= 0 && scene != sm.sceneIdx) {
+                // Same track: the flames' own scene fade, a little shorter so it lands first
+                int frames = fade * std::max(10.0f, ofGetFrameRate()) * 0.9f;
+                sm.fadeToScene(scene, frames);
+            }
             gui.wandering = state.value("wandering", false);
+            fader.apply(state, sm.activeTrack.displayParameters);
+            if (sameScene) {
+                fader.apply(state, sm.activeScene.displayParameters);
+            } else {
+                // The scene fade carries the scene's own values; the preset's land at the end
+                ofJson sceneValues = state;
+                fader.atEnd([&sm, sceneValues]() { ofDeserialize(sceneValues, sm.activeScene.displayParameters); });
+            }
             break;
         }
 
         case PRESET_MILKDROP: {
-            ofDeserialize(state, gui.milkdropParams);
+            fader.apply(state, gui.milkdropParams);
             string preset = state.value("preset", "");
-            if (!preset.empty()) app.projectM.loadPresetFile(resolveFrom(app.projectM.getPresetsFolder(), preset), false);
+            if (preset.empty()) break;
+            string path = resolveFrom(app.projectM.getPresetsFolder(), preset);
+            if (path == app.projectM.getPresetPath()) break;
+            // projectM's own blend, stretched to the fade
+            if (fade > 0) {
+                app.projectM.setSoftCutDuration(fade);
+                fader.atEnd([this]() { app.projectM.setSoftCutDuration(3); });
+            }
+            app.projectM.loadPresetFile(path, fade > 0);
             break;
         }
 
         case PRESET_SHADER: {
-            if (state.contains("settings")) ofDeserialize(state["settings"], gui.shaderParams);
+            if (state.contains("settings")) fader.apply(state["settings"], gui.shaderParams);
             string shader = state.value("shader", "");
-            if (!shader.empty() && shader != app.shaderEngine->getCurrentPath()) app.shaderEngine->loadPath(shader);
-            if (state.contains("inputs")) ofDeserialize(state["inputs"], app.shaderEngine->getShader().parameters);
+            if (!shader.empty() && shader != app.shaderEngine->getCurrentPath()) {
+                // Another shader: it fades in over the old one, which keeps running
+                app.shaderEngine->loadPath(shader, fade);
+                if (state.contains("inputs")) ofDeserialize(state["inputs"], app.shaderEngine->getShader().parameters);
+            } else if (state.contains("inputs")) {
+                fader.apply(state["inputs"], app.shaderEngine->getShader().parameters);
+            }
             break;
         }
 
         case PRESET_LIGHTS: {
             LightingLayer &lighting = *app.lighting;
-            ofDeserialize(state, lighting.ambient);
-            ofDeserialize(state, lighting.feedAIncludesLights);
-            ofDeserialize(state, lighting.feedBSource);
+            fader.apply(state, lighting.ambient);
+            fader.apply(state, lighting.feedAIncludesLights);
+            fader.apply(state, lighting.feedBSource);
             for (Light &light : lighting.lights) {
-                ofDeserialize(state, light.group);
+                string name = light.group.getEscapedName();
+                if (!state.contains(name)) continue;
+                ofJson target = state[name];
+                bool turnOn = target.value("on", "0") == "1";
+                if (turnOn && !light.on) {
+                    // Switching on: up from nothing
+                    light.intensity = 0;
+                    fader.apply(state, light.group);
+                } else if (!turnOn && light.on) {
+                    // Switching off: down to nothing, then off, holding the stored intensity
+                    float storedIntensity = ofToFloat(target.value("intensity", "0"));
+                    ofJson rest = state;
+                    rest[name].erase("on");
+                    rest[name].erase("intensity");
+                    fader.apply(rest, light.group);
+                    fader.to(light.intensity, 0.0f);
+                    fader.atEnd([&light, storedIntensity]() {
+                        light.on = false;
+                        light.intensity = storedIntensity;
+                    });
+                } else {
+                    fader.apply(state, light.group);
+                }
             }
             break;
         }
 
-        case PRESET_GLOBAL:
-            ofDeserialize(state, gui.mixerParams);
-            if (state.contains("flames")) apply(PRESET_FLAMES, state["flames"]);
-            if (state.contains("milkdrop")) apply(PRESET_MILKDROP, state["milkdrop"]);
-            if (state.contains("shader")) apply(PRESET_SHADER, state["shader"]);
-            if (state.contains("lights")) apply(PRESET_LIGHTS, state["lights"]);
+        case PRESET_GLOBAL: {
+            // A different engine on A or B: the whole picture fades from a frozen frame
+            int engineA = gui.engineA, engineB = gui.engineB;
+            fader.apply(state, gui.mixerParams);
+            if (fade > 0 && (gui.engineA != engineA || gui.engineB != engineB)) app.freezeOutput(fade);
+            if (state.contains("flames")) applyModule(PRESET_FLAMES, state["flames"], fade);
+            if (state.contains("milkdrop")) applyModule(PRESET_MILKDROP, state["milkdrop"], fade);
+            if (state.contains("shader")) applyModule(PRESET_SHADER, state["shader"], fade);
+            if (state.contains("lights")) applyModule(PRESET_LIGHTS, state["lights"], fade);
             break;
+        }
     }
 }

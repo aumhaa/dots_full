@@ -207,7 +207,12 @@ void StateManager::update() {
             float t = getGenomeInterpolation();
 
             if (fading && fadeForward && t > 0.999) {
-                advanceScene();
+                if (fadeTargetScene >= 0) {
+                    selectScene(fadeTargetScene);
+                    fadeTargetScene = -1;
+                } else {
+                    advanceScene();
+                }
                 fading = false;
             } else if (fading && !fadeForward && t < 0.001) {
                 fading = false;
@@ -242,6 +247,8 @@ void StateManager::flameWanderUpdate() {
 void StateManager::flameUpdate(float audioRMS) {
     // Rotate both the same amount
     float speed = activeScene.baseSpeed + audioRMS * activeScene.rmsSpeedMult;
+    // A bad value here would be written into the genomes and kill the flames for good
+    if (!std::isfinite(speed)) return;
     flam3_rotate(currScene->genome, speed, flam3_inttype_log);
     flam3_rotate(nextScene->genome, speed, flam3_inttype_log);
 }
@@ -258,6 +265,7 @@ float StateManager::getGenomeInterpolation() {
 
     long currFrame = ofGetFrameNum();
     long delta = currFrame - fadeStartFrame;
+    int fadeFrames = fadeTargetScene >= 0 ? fadeTargetFrames : this->fadeFrames;
 
     // TODO: make this a param
     float split = (float)delta / fadeFrames;
@@ -497,6 +505,23 @@ void StateManager::selectScene(int index) {
     advanceScene();
 }
 
+void StateManager::fadeToScene(int index, int frames) {
+    if (index < 0 || index >= getTrack().scenes.size() || index == sceneIdx) return;
+    if (wandering || fading || frames <= 0) {
+        selectScene(index);
+        return;
+    }
+    // The usual forward fade, with the target scene standing in as the next one
+    activeScene.copyParamsTo(*currScene);
+    nextScene = getTrack().scenes[index];
+    fadeTargetScene = index;
+    fadeTargetFrames = frames;
+    fading = true;
+    fadeForward = true;
+    fadeStartFrame = ofGetFrameNum();
+    ofNotifyEvent(onSceneUpdate, sceneIdx);
+}
+
 int StateManager::trackIndexForId(int trackId) {
     for (int i = 0; i < tracks.size(); ++i) {
         if (tracks[i].trackId == trackId) return i;
@@ -513,6 +538,7 @@ void StateManager::saveTrack() {
 }
 
 void StateManager::fadeSceneFwd() {
+    fadeTargetScene = -1;
     if (wandering) return;
 
     if (!fading) {
@@ -528,6 +554,7 @@ void StateManager::fadeSceneFwd() {
 }
 
 void StateManager::fadeSceneRev() {
+    fadeTargetScene = -1;
     if (wandering) return;
 
     if (!fading) {

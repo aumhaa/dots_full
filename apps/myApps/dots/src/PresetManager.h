@@ -34,18 +34,21 @@ public:
 
     // A global preset leaves the lights out unless asked: they're usually per venue
     bool save(int module, const string &name, bool globalIncludesLights = false);
+    // Recalls over the GUI's preset fade time
     bool recall(int module, const string &name);
     // Moves the file into a deleted/ folder beside it, so nothing is lost
     bool remove(int module, const string &name);
 
     ofJson capture(int module, bool globalIncludesLights = false);
-    void apply(int module, const ofJson &state);
+    // With fadeSeconds, values glide and each engine changes over the fade
+    void apply(int module, const ofJson &state, float fadeSeconds = 0);
 
     // Letters, digits, space, - and _; anything else becomes _
     static string cleanName(const string &name);
 
 private:
     string path(int module, const string &name);
+    void applyModule(int module, const ofJson &state, float fadeSeconds);
 
     ofApp &app;
 };

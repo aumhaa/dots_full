@@ -128,6 +128,7 @@ void GuiApp::setup() {
     mixerParams.add(engineA.set("A (flames/milk/shader)", ENGINE_FLAMES, ENGINE_FLAMES, ENGINE_SHADER));
     mixerParams.add(engineB.set("B (flames/milk/shader)", ENGINE_MILKDROP, ENGINE_FLAMES, ENGINE_SHADER));
     mixerParams.add(crossfade.set("crossfade A-B", 0, 0, 1));
+    mixerParams.add(presetFadeSeconds.set("preset fade (s)", 2, 0, 10));
     mixerGui.setup(mixerParams);
 
     // Shader engine

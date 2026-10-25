@@ -76,6 +76,7 @@ void MidiController::add_listeners() {
         {DOTS_CC_ENGINE_A, &gui->engineA,             twisterColorForSection("MilkDrop")},
         {DOTS_CC_ENGINE_B, &gui->engineB,             twisterColorForSection("MilkDrop")},
         {DOTS_CC_SHADER_RUNNING, &gui->shaderRunning, twisterColorForSection("Shader")},
+        {DOTS_CC_PRESET_FADE, &gui->presetFadeSeconds, twisterColorForSection("MilkDrop")},
         {DOTS_CC_FLAMES_RUNNING, &gui->flamesRunning, twisterColorForSection("Drawing")},
         {DOTS_CC_MILKDROP_RUNNING, &gui->milkdropRunning, twisterColorForSection("MilkDrop")},
         {DOTS_CC_LIGHTS_AMBIENT, &lighting->ambient,  twisterColorForSection("Lights")},

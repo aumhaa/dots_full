@@ -309,6 +309,8 @@ public:
     // Jump straight to a track (by index into tracks) or a scene of the current track
     void selectTrack(int index);
     void selectScene(int index);
+    // Fades to any scene of the current track over `frames` frames (not while wandering)
+    void fadeToScene(int index, int frames);
     int trackIndexForId(int trackId);
 
     void fadeSceneFwd();
@@ -337,6 +339,8 @@ public:
     bool fadeForward;
     long fadeStartFrame;
     int fadeFrames;
+    int fadeTargetScene = -1;   // a fadeToScene() in progress, else -1
+    int fadeTargetFrames = 100;
 
     // Where are we
     int trackIdx, sceneIdx;

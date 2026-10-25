@@ -26,6 +26,7 @@
 #define DOTS_CC_ENGINE_A 27
 #define DOTS_CC_ENGINE_B 28
 #define DOTS_CC_SHADER_RUNNING 29
+#define DOTS_CC_PRESET_FADE 30      // preset fade time, 0-10 s
 #define DOTS_NOTE_PREV_SHADER 7
 #define DOTS_NOTE_NEXT_SHADER 8
 

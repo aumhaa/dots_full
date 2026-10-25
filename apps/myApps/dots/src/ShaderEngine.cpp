@@ -50,29 +50,61 @@ void ShaderEngine::setAnimatedOnly(bool only) {
 }
 
 void ShaderEngine::resize(int width, int height) {
-    fbo.allocate(width, height, GL_RGBA);
-    fbo.begin();
-    ofClear(0, 255);
-    fbo.end();
+    for (ofFbo *buffer : {&fbo, &outgoingFbo, &incomingFbo}) {
+        buffer->allocate(width, height, GL_RGBA);
+        buffer->begin();
+        ofClear(0, 255);
+        buffer->end();
+    }
 }
 
 void ShaderEngine::render() {
     float now = ofGetElapsedTimef();
     float delta = lastFrameTime > 0 ? std::min(now - lastFrameTime, 0.25f) : 0;
     lastFrameTime = now;
-    if (!shaderOk) return;
     time += delta;
-    shader.render(fbo, time, delta, frameIndex++);
+
+    if (outgoing) {
+        // Mid-fade: both shaders run, the new one over the old
+        float t = ofClamp((now - fadeStart) / fadeSeconds, 0, 1);
+        outgoingTime += delta;
+        outgoing->render(outgoingFbo, outgoingTime, delta, outgoingFrame++);
+        if (shaderOk) shader->render(incomingFbo, time, delta, frameIndex++);
+        fbo.begin();
+        ofClear(0, 255);
+        ofPushStyle();
+        ofEnableAlphaBlending();
+        ofSetColor(255);
+        outgoingFbo.draw(0, 0);
+        ofSetColor(255, 255 * t * t * (3 - 2 * t));
+        incomingFbo.draw(0, 0);
+        ofPopStyle();
+        fbo.end();
+        if (t >= 1) outgoing.reset();
+        return;
+    }
+
+    if (!shaderOk) return;
+    shader->render(fbo, time, delta, frameIndex++);
 }
 
-void ShaderEngine::load(int newIndex) {
+void ShaderEngine::load(int newIndex, float fade) {
     if (library.empty()) return;
+    if (fade > 0 && shaderOk) {
+        // The current shader carries on underneath while the new one fades in
+        outgoing = std::move(shader);
+        shader = std::make_unique<ISFShader>();
+        outgoingTime = time;
+        outgoingFrame = frameIndex;
+        fadeStart = ofGetElapsedTimef();
+        fadeSeconds = fade;
+    }
     index = (newIndex % (int)library.size() + library.size()) % library.size();
-    shaderOk = shader.load(library[index]);
+    shaderOk = shader->load(library[index]);
     std::error_code ignored;
     loadedFileTime = std::filesystem::last_write_time(library[index], ignored);
     if (!shaderOk) {
-        ofLogWarning("ShaderEngine") << shader.getName() << ": " << shader.getError();
+        ofLogWarning("ShaderEngine") << shader->getName() << ": " << shader->getError();
         fbo.begin();
         ofClear(0, 255);
         fbo.end();
@@ -82,14 +114,14 @@ void ShaderEngine::load(int newIndex) {
     parametersVersion++;
 }
 
-void ShaderEngine::loadPath(const string &path) {
+void ShaderEngine::loadPath(const string &path, float fade) {
     auto found = std::find(library.begin(), library.end(), path);
     if (found == library.end()) {
         if (!ofFile::doesFileExist(path, false)) return;
         library.push_back(path);
         found = library.end() - 1;
     }
-    load(found - library.begin());
+    load(found - library.begin(), fade);
 }
 
 void ShaderEngine::next() { load(index + 1); }
@@ -101,14 +133,14 @@ void ShaderEngine::checkForChanges() {
     std::error_code ignored;
     auto fileTime = std::filesystem::last_write_time(library[index], ignored);
     if (!ignored && fileTime != loadedFileTime) {
-        ofLogNotice("ShaderEngine") << "Reloading " << shader.getName();
+        ofLogNotice("ShaderEngine") << "Reloading " << shader->getName();
         load(index);
     }
 }
 
 string ShaderEngine::getStatus() const {
     if (library.empty()) return "no ISF generators found";
-    string status = ofToString(index + 1) + "/" + ofToString(library.size()) + " " + shader.getName();
-    if (!shaderOk) status += " (" + shader.getError() + ")";
+    string status = ofToString(index + 1) + "/" + ofToString(library.size()) + " " + shader->getName();
+    if (!shaderOk) status += " (" + shader->getError() + ")";
     return status;
 }
