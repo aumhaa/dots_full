@@ -88,12 +88,13 @@ bool ControlPages::update() {
     return true;
 }
 
-// A shader's inputs, flattened: a point is two entries, a colour three
+// A shader's inputs, flattened: a point is two entries, a colour three. A Synesthesia scene's groups
+// are ofParameterGroups, whose type() isn't an ofParameter<>'s, so they're found by cast.
 void ControlPages::addShaderInputs(ofParameterGroup &group, vector<ControlEntry> &entries) {
     for (auto &child : group) {
         ofAbstractParameter *p = child.get();
-        if (IS(p, ofParameterGroup)) {
-            addShaderInputs(static_cast<ofParameterGroup &>(*p), entries);
+        if (auto inner = dynamic_cast<ofParameterGroup *>(p)) {
+            addShaderInputs(*inner, entries);
             continue;
         }
         string name = p->getName();
@@ -182,12 +183,14 @@ void ControlPages::build() {
         {"crossfade A-B", "Mixer", &gui.crossfade},
     }});
 
+    // The shader's inputs, 16 to a page, as many pages as they take
     vector<ControlEntry> inputs;
     addShaderInputs(app->shaderEngine->getShader().parameters, inputs);
-    ControlPage shader1{"shader", "Shader", "Shader", {}}, shader2{"shader", "Shader 2", "Shader", {}};
-    for (std::size_t i = 0; i < inputs.size() && i < 32; ++i) (i < 16 ? shader1 : shader2).entries.push_back(inputs[i]);
-    pages.push_back(shader1);
-    if (!shader2.entries.empty()) pages.push_back(shader2);
+    for (std::size_t first = 0; first < std::max<std::size_t>(inputs.size(), 1); first += 16) {
+        ControlPage page{"shader", first == 0 ? "Shader" : "Shader " + ofToString(first / 16 + 1), "Shader", {}};
+        for (std::size_t i = first; i < inputs.size() && i < first + 16; ++i) page.entries.push_back(inputs[i]);
+        pages.push_back(page);
+    }
     pages.push_back({"shader", "Shader set", "Shader", {
         {"animated only", "Shader", &gui.shaderAnimatedOnly},
         {"kinds all/ISF/syn", "Shader", &gui.shaderSources},
