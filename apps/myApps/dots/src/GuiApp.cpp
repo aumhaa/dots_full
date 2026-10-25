@@ -358,6 +358,9 @@ void GuiApp::draw() {
         if (soundStreamDevice < soundDevices.size()) {
             ofDrawBitmapString(soundDevices[soundStreamDevice].name, 5, 30-fftHeight);
         }
+        // The input level (audioRMS is of half-scale samples), to tell silence from a dead input
+        float levelDb = audioRMS > 0 ? 20 * log10(audioRMS * 2) : -120;
+        ofDrawBitmapString(levelDb > -90 ? "level " + ofToString(levelDb, 0) + " dB" : "level: silent", 5, 45-fftHeight);
         
         // Draw audio centroid
         float mappedCentroid = fftWidth * audioCentroid;

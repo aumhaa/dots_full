@@ -66,7 +66,28 @@ void ShaderEngine::addSynesthesiaFolder(const string &folder) {
 
 std::unique_ptr<ShaderSource> ShaderEngine::makeSource(const string &path) {
     if (!path.empty() && SynScene::isScene(path)) return std::make_unique<SynScene>(audio);
-    return std::make_unique<ISFShader>();
+    return std::make_unique<ISFShader>(&audioWaveform, &audioSpectrum);
+}
+
+// One row, the value in every channel; ISF's audio textures put silence at 0.5
+static void uploadRow(ofTexture &texture, const float *values, int count, float scale, float offset) {
+    if (count <= 0) return;
+    vector<float> rgba(count * 4);
+    for (int i = 0; i < count; ++i) {
+        float v = std::isfinite(values[i]) ? values[i] * scale + offset : offset;
+        rgba[4 * i] = rgba[4 * i + 1] = rgba[4 * i + 2] = v;
+        rgba[4 * i + 3] = 1;
+    }
+    if (!texture.isAllocated() || texture.getWidth() != count) {
+        texture.allocate(count, 1, GL_RGBA32F, false);   // GL_TEXTURE_2D, as sampler2D expects
+        texture.setTextureMinMagFilter(GL_LINEAR, GL_LINEAR);
+    }
+    texture.loadData(rgba.data(), count, 1, GL_RGBA);
+}
+
+void ShaderEngine::setAudioInput(const float *samples, int sampleCount, const float *bins, int binCount) {
+    uploadRow(audioWaveform, samples, sampleCount, 0.5f, 0.5f);
+    uploadRow(audioSpectrum, bins, binCount, 1, 0);
 }
 
 // A scene is a folder: the newest of its files
@@ -227,6 +248,11 @@ void ShaderEngine::testAll(bool includeISF) {
     const SynAudio *liveAudio = audio;
     audio = &testAudio;
     testSignal(testAudio, 0, 8);   // warm the analysis up
+    // ISF's audio inputs: a sine and a falling spectrum
+    vector<float> wave(512), bins(257);
+    for (std::size_t i = 0; i < wave.size(); ++i) wave[i] = 0.8f * std::sin(TWO_PI * 4 * i / wave.size());
+    for (std::size_t i = 0; i < bins.size(); ++i) bins[i] = 1 - (float)i / bins.size();
+    setAudioInput(wave.data(), wave.size(), bins.data(), bins.size());
     {
         // What the analysis makes of it (120 BPM, a beat every half second)
         vector<float> values = testAudio.values();

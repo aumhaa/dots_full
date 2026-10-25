@@ -23,6 +23,9 @@ public:
 
     // Advances the shader's clock and draws a frame into getFbo()
     void render();
+
+    // The latest audio for ISF's audio inputs: samples (-1 to 1) and spectrum (0 to 1)
+    void setAudioInput(const float *samples, int sampleCount, const float *bins, int binCount);
     ofFbo &getFbo() { return fbo; }
 
     void next();
@@ -83,6 +86,8 @@ private:
     float fadeStart = 0, fadeSeconds = 0, outgoingTime = 0;
     int outgoingFrame = 0;
     std::filesystem::file_time_type loadedFileTime;
+
+    ofTexture audioWaveform, audioSpectrum;   // one row each, for ISF's audio and audioFFT inputs
 
     ofFbo fbo;
     float time = 0, lastFrameTime = 0;

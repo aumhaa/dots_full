@@ -59,13 +59,14 @@ ISFShader::Kind ISFShader::classify(const string &path) {
         if (pass.contains("TARGET") || pass.value("PERSISTENT", false)) return UNUSABLE;
     }
 
-    bool start = false, end = false, image = false;
+    bool start = false, end = false, image = false, audio = false;
     for (auto &input : header.value("INPUTS", ofJson::array())) {
         string name = input.value("NAME", "");
         if (name == "inputImage") return FILTER;
         start |= name == "startImage";
         end |= name == "endImage";
         image |= input.value("TYPE", "") == "image";
+        audio |= input.value("TYPE", "") == "audio" || input.value("TYPE", "") == "audioFFT";
     }
     for (auto &category : header.value("CATEGORIES", ofJson::array())) {
         if (category.is_string() && category.get<string>() == "Transition") return TRANSITION;
@@ -73,8 +74,8 @@ ISFShader::Kind ISFShader::classify(const string &path) {
     if (start && end) return TRANSITION;
     if (image) return NEEDS_IMAGE;
 
-    // Animated: it reads the clock or the frame count
-    bool animated = body.find("TIME") != string::npos || body.find("FRAMEINDEX") != string::npos;
+    // Animated: it reads the clock or the frame count, or follows the audio
+    bool animated = audio || body.find("TIME") != string::npos || body.find("FRAMEINDEX") != string::npos;
     return animated ? ANIMATED_GENERATOR : STATIC_GENERATOR;
 }
 
@@ -228,7 +229,10 @@ void ISFShader::render(ofFbo &target, float time, float timeDelta, int frameInde
             glm::vec2 p = input.pointValue;
             shader.setUniform2f(input.name, p.x, p.y);
         } else {
-            shader.setUniformTexture(input.name, blank, textureUnit++);
+            const ofTexture *texture = &blank;
+            if (input.type == "audio" && waveform && waveform->isAllocated()) texture = waveform;
+            if (input.type == "audioFFT" && spectrum && spectrum->isAllocated()) texture = spectrum;
+            shader.setUniformTexture(input.name, *texture, textureUnit++);
         }
     }
     quad.draw();

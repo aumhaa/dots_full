@@ -55,6 +55,9 @@ their own picture. By default only the ones that animate by themselves are
 offered; turn off "animated only" in the Shader panel to add the static
 patterns. Filters, transitions and multi-pass shaders aren't run yet.
 
+Shaders with audio inputs (`audio`, `audioFFT`) get dots's audio input, the
+same signal the flames hear, and count as animated.
+
 The Shader panel has running (CC 29) and previous/next shader (`<` and `>`,
 notes 7 and 8); the shader's own inputs get a panel of their own, rebuilt for
 each shader. A shader reloads when its file changes, so it can be edited live.

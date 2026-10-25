@@ -770,6 +770,9 @@ void ofApp::update(){
 
     // Compute audio centroid mapping to useful space
     float centroidMapped = sqrt(ofMap(audioCentroid, 0, centroidMaxBucket, 0, 1, true)); // TODO: should we use sqrt here?
+    // Near silence (a quiet room on the built-in mic) the centroid is the noise floor's,
+    // about the middle of the spectrum, which pinned mpx at the top: fade it out instead
+    centroidMapped *= ofMap(audioRMS, 0.001, 0.004, 0, 1, true);
 
     // Compute audio RMS mapping to useful space
     float audioRMSMapped = ofClamp(audioRMS * rmsMultiple, 0.0, 1.0);
@@ -989,6 +992,7 @@ void ofApp::draw(){
         projectM.render();
     }
     if (shaderActive) {
+        shaderEngine->setAudioInput(audioInput, audioBufferSize, fftOutput, nFftBuckets);
         shaderEngine->render();
     }
 

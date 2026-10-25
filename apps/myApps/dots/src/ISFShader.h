@@ -14,6 +14,10 @@
 
 class ISFShader : public ShaderSource {
 public:
+    // audio and audioFFT inputs get these (one row each), when given
+    ISFShader(const ofTexture *waveform = nullptr, const ofTexture *spectrum = nullptr)
+        : waveform(waveform), spectrum(spectrum) {}
+
     bool load(const string &path) override;
     void render(ofFbo &target, float time, float timeDelta, int frameIndex) override;
 
@@ -37,5 +41,6 @@ private:
     ofShader shader;
     ofMesh quad;
     ofFbo raw;          // rendered GL-style (y up), flipped into the target
-    ofTexture blank;    // stands in for image and audio inputs for now
+    ofTexture blank;    // stands in for image inputs
+    const ofTexture *waveform, *spectrum;
 };
