@@ -41,6 +41,7 @@ uniform vec2 center;
 uniform vec2 rotation;     // the camera's, as cos and sin
 uniform vec2 scale;        // flame units to clip space
 uniform float reseedChance;
+uniform float paletteShift;
 
 const float PI = 3.14159265358979;
 const float EPS = 1e-10;
@@ -187,7 +188,7 @@ void main() {
     d = vec2(d.x * rotation.x - d.y * rotation.y, d.x * rotation.y + d.y * rotation.x);
     gl_Position = (lost || bad(plotted) || opacity <= 0.0) ? vec4(2.0, 2.0, 2.0, 1.0) : vec4(d * scale * vec2(1.0, -1.0), 0.0, 1.0);
     gl_PointSize = 1.0;
-    vec3 colour = texelFetch(palette, ivec2(clamp(int(plotted.z * 256.0), 0, 255), 0), 0).rgb;
+    vec3 colour = texelFetch(palette, ivec2(clamp(int(fract(plotted.z + paletteShift) * 256.0), 0, 255), 0), 0).rgb;
     plotColor = vec4(colour * opacity, opacity);
 }
 )";
@@ -412,6 +413,7 @@ void FlameRenderer::render(flam3_genome &genome, const Settings &settings) {
     iterate.setUniform2f("rotation", cos(angle), sin(angle));
     iterate.setUniform2f("scale", 2 * ppu / width, 2 * ppu / height);
     iterate.setUniform1f("reseedChance", 0.001f);
+    iterate.setUniform1f("paletteShift", settings.paletteShift);
     // Feedback by hand: openFrameworks's helpers turn rasterizing off (and unbind the shader),
     // and here every step is drawn as well as kept
     GLint saltLocation = glGetUniformLocation(iterate.getProgram(), "salt");

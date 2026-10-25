@@ -35,13 +35,25 @@ point between passes), adds every step to a floating-point histogram that fades
 a little each frame, and tone-maps it as flam3 does (log density, gamma,
 vibrancy). The variations the genebank uses are ported from
 `src/flam3/variations.c`; any other is drawn as linear, and the panel's status
-says how many a sheep has. The Sheep panel: the sheep, loop seconds, the
-flock (points, in thousands), passes (steps a frame), trail (how much of the
-picture a frame keeps), exposure and gamma.
+says how many a sheep has.
+
+As the screensaver does, it moves from sheep to sheep by morphing: flam3
+interpolates the two genomes, both still turning, over the morph time (0 cuts).
+A sheep chosen by hand morphs in; with auto advance on, the next comes after so
+many loops, in order or shuffled. The music pushes it: the overall level speeds
+the turning, bass twists the xforms further and pulses the zoom, the level
+brightens it, and the high end shifts the colours along the palette, each with
+its own amount (0 turns it off).
+
+The Sheep panel (and sheep mode's dials on the modGrid): the sheep, loop
+seconds, morph seconds, loops a sheep, auto advance, shuffle, the flock
+(points, in thousands), passes (steps a frame), trail (how much of the picture
+a frame keeps), exposure, gamma, and the five audio amounts.
 
 `DOTS_TEST_SHEEP=<folder>` renders a spread of sheep (`DOTS_TEST_SHEEP_COUNT`,
 24 by default) into the folder as PNGs, logs each one's time a frame and
-unsupported variations, and quits.
+unsupported variations, and quits. `DOTS_TEST_SHEEP_MORPH=<folder>` saves eight
+steps of a morph (`DOTS_TEST_SHEEP_FROM` to `DOTS_TEST_SHEEP_TO`).
 
 ### Flames block locks
 

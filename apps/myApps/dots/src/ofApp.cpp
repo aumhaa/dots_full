@@ -64,7 +64,14 @@ void ofApp::setup(){
 
     crossfade = 0;
     shaderEngine->setup(ofGetWidth(), ofGetHeight(), &synAudio);
-    sheepEngine->setup(ofGetWidth(), ofGetHeight(), stateManager->genebank, stateManager->ngenebank);
+    sheepEngine->setup(ofGetWidth(), ofGetHeight(), stateManager->genebank, stateManager->ngenebank, &synAudio);
+    // DOTS_TEST_SHEEP_MORPH=folder renders frames of a morph (DOTS_TEST_SHEEP_FROM to _TO), and quits
+    if (const char *folder = getenv("DOTS_TEST_SHEEP_MORPH")) {
+        int from = getenv("DOTS_TEST_SHEEP_FROM") ? atoi(getenv("DOTS_TEST_SHEEP_FROM")) : 0;
+        int to = getenv("DOTS_TEST_SHEEP_TO") ? atoi(getenv("DOTS_TEST_SHEEP_TO")) : 569;
+        sheepEngine->testMorph(folder, from, to, 8);
+        ofExit();
+    }
     // DOTS_TEST_SHEEP=folder renders a spread of sheep into it, reports, and quits
     if (const char *folder = getenv("DOTS_TEST_SHEEP")) {
         sheepEngine->testShots(folder, getenv("DOTS_TEST_SHEEP_COUNT") ? atoi(getenv("DOTS_TEST_SHEEP_COUNT")) : 24);

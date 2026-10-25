@@ -32,6 +32,7 @@ public:
         float fade = 0.8f;          // how much of the histogram a frame keeps
         float exposure = 1;         // on top of the genome's brightness
         float gammaScale = 1;       // on the genome's gamma
+        float paletteShift = 0;     // along the palette, wrapping
     };
 
     void setup(int width, int height);

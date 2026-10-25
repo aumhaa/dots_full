@@ -183,12 +183,21 @@ void ControlPages::build() {
     pages.push_back({"sheep", "Sheep", "Sheep", {
         {"sheep", "Sheep", &sheep.sheep},
         {"loop seconds", "Sheep", &sheep.loopSeconds},
+        {"morph seconds", "Sheep", &sheep.morphSeconds},
+        {"loops a sheep", "Sheep", &sheep.loopsPerSheep},
         {"points (k)", "Sheep", &sheep.pointsK},
         {"passes", "Sheep", &sheep.passes},
         {"trail", "Sheep", &sheep.trail},
         {"exposure", "Sheep", &sheep.exposure},
+        {"audio speed", "Audio Analysis", &sheep.audioSpeed},
+        {"audio twist", "Audio Analysis", &sheep.audioTwist},
+        {"audio zoom", "Audio Analysis", &sheep.audioZoom},
+        {"audio bright", "Audio Analysis", &sheep.audioBright},
+        {"audio colour", "Audio Analysis", &sheep.audioColour},
         {"gamma", "Sheep", &sheep.gammaScale},
         {"running", "Sheep", &gui.sheepRunning},
+        {"auto advance", "Sheep", &sheep.autoAdvance},
+        {"shuffle", "Sheep", &sheep.shuffle},
     }});
     // Sets have no settings of their own: the fade between entries and what's on the mixer
     pages.push_back({"sets", "Sets", "Sets", {
