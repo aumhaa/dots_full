@@ -38,7 +38,7 @@ void main() {
 }
 )";
 
-SynScene::SynScene(const SynAudio *audio) : audio(audio) {}
+SynScene::SynScene(const SynAudio *audio, const ShaderMedia *media) : audio(audio), media(media) {}
 SynScene::~SynScene() {}
 
 string SynScene::getScriptError() const {
@@ -228,7 +228,7 @@ void SynScene::feedScript(float time, int frameIndex, float width, float height,
     feed("_click", {0, 0, 0});
     feed("_muv", {0.5f, 0.5f});
     feed("_muvc", {0, 0});
-    feed("syn_MediaType", {0});
+    feed("syn_MediaType", {mediaType()});
     const vector<string> &audioNames = SynAudio::names();
     for (std::size_t i = 0; i < audioNames.size(); ++i) feed(audioNames[i], {i < audioValues.size() ? audioValues[i] : 0});
     for (auto &control : controls) {
@@ -577,7 +577,7 @@ void SynScene::render(ofFbo &target, float time, float timeDelta, int frameIndex
         shader.setUniform3f("_click", 0, 0, 0);
         shader.setUniform2f("_muv", 0.5, 0.5);
         shader.setUniform2f("_muvc", 0, 0);
-        shader.setUniform1f("syn_MediaType", 0);
+        shader.setUniform1f("syn_MediaType", mediaType());
         for (std::size_t i = 0; i < audioValues.size() && i < audioNames.size(); ++i) {
             shader.setUniform1f(audioNames[i], audioValues[i]);
         }
@@ -608,7 +608,7 @@ void SynScene::render(ofFbo &target, float time, float timeDelta, int frameIndex
         }
         Pass &picture = passes.back();
         shader.setUniformTexture("syn_FinalPass", picture.buffers[picture.front].getTexture(), unit++);
-        shader.setUniformTexture("syn_UserImage", blank, unit++);
+        shader.setUniformTexture("syn_UserImage", media && media->texture ? *media->texture : blank, unit++);
         for (auto &image : images) shader.setUniformTexture(image.first, image.second, unit++);
 
         ofDrawRectangle(0, 0, out.getWidth(), out.getHeight());

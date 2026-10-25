@@ -1,4 +1,5 @@
 #include "ofApp.h"
+#include <CoreFoundation/CoreFoundation.h>
 #include "ofAppGLFWWindow.h"
 #define GLFW_INCLUDE_NONE
 #include "GLFW/glfw3.h"
@@ -104,6 +105,21 @@ void ofApp::setup(){
     
     gui->nAudioBuckets = nFftBuckets;
     gui->audioBuckets = fftOutput;
+
+    // DOTS_TEST_AUDIO_DEVICE=name opens that input (as picking it in the GUI does) for 15 s and quits
+    if (const char *testDevice = getenv("DOTS_TEST_AUDIO_DEVICE")) {
+        vector<ofSoundDevice> devices = soundStream.getDeviceList();
+        for (int i = 0; i < (int)devices.size(); ++i) {
+            if (devices[i].name.find(testDevice) == string::npos || devices[i].inputChannels < 1) continue;
+            soundStream.close();
+            cout << "[audio-test] " << ofGetTimestampString("%H:%M:%S") << " opening " << devices[i].name << ": " << startSoundStream(i) << endl;
+            ofSleepMillis(15000);
+            soundStream.close();
+            cout << "[audio-test] " << ofGetTimestampString("%H:%M:%S") << " closed" << endl;
+            break;
+        }
+        ofExit();
+    }
 
     billboardShader.setGeometryInputType(GL_LINES);
     billboardShader.setGeometryOutputType(GL_TRIANGLE_STRIP);
@@ -805,9 +821,20 @@ void ofApp::update(){
     auto inMix = [&](int engine) {
         return (engineA == engine && crossfade < 0.999) || (engineB == engine && crossfade > 0.001);
     };
-    flamesActive = gui->flamesRunning && (inMix(ENGINE_FLAMES) || lighting->feedBUsesFlames());
-    milkdropActive = gui->milkdropRunning && (inMix(ENGINE_MILKDROP) || lighting->feedBUsesMilkDrop());
+    // ... or, for the flames and MilkDrop, a Synesthesia scene's media
     shaderActive = gui->shaderRunning && (inMix(ENGINE_SHADER) || lighting->feedBUsesShader() || shaderSyphonServer.hasClients());
+    MediaInput &media = shaderEngine->getMedia();
+    flamesActive = gui->flamesRunning && (inMix(ENGINE_FLAMES) || lighting->feedBUsesFlames() || (shaderActive && media.usesFlames()));
+    milkdropActive = gui->milkdropRunning && (inMix(ENGINE_MILKDROP) || lighting->feedBUsesMilkDrop() || (shaderActive && media.usesMilkDrop()));
+
+    // The media setting picks the kind; the library picking a file or Syphon feed changes it too
+    if (gui->shaderMedia != appliedShaderMedia) {
+        appliedShaderMedia = gui->shaderMedia;
+        media.select(appliedShaderMedia);
+    } else if (media.getKind() != appliedShaderMedia) {
+        appliedShaderMedia = media.getKind();
+        gui->shaderMedia = appliedShaderMedia;
+    }
     gui->flamesPaused = !flamesActive;
     gui->milkdropPaused = !milkdropActive;
     gui->shaderPaused = !shaderActive;
@@ -992,6 +1019,7 @@ void ofApp::draw(){
         projectM.render();
     }
     if (shaderActive) {
+        shaderEngine->updateMedia(engineFbo(ENGINE_FLAMES), engineFbo(ENGINE_MILKDROP));
         shaderEngine->setAudioInput(audioInput, audioBufferSize, fftOutput, nFftBuckets);
         shaderEngine->render();
     }

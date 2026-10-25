@@ -87,8 +87,15 @@ what it sets becomes uniforms (`src/SynScript.cpp`). Synesthesia's meta
 controls (`meta/brightness` and so on) aren't in dots, so scripts setting them
 do nothing; what scripts print goes to dots's log.
 
-Not yet: media (scenes take their no-media path) and the song-change
-transitions (each picks a value when the scene loads).
+**Media** (Synesthesia's `syn_UserImage`): a scene can be given the flames,
+MilkDrop, a Syphon feed, or an image or video file. Pick one in the library's
+Files tab under "Media for Synesthesia scenes" (it lists Synesthesia's media
+folders, from its own settings, and `bin/data/media`), or the kind with
+"media (0-4)" in the Shader panel: none, flames, MilkDrop, Syphon, file. The
+choice is saved in shader presets, and an engine used as media keeps running.
+
+Not yet: the song-change transitions (each picks a value when the scene
+loads).
 
 To check every scene, run dots from Terminal with `DOTS_TEST_SCENES=1`
 (`=all` adds the ISF shaders): it compiles and runs each for 30 frames with a
@@ -96,6 +103,13 @@ test signal, prints a line for each, and quits. `DOTS_TEST_SHOTS=<folder>`
 also saves the last frame of each and contact sheets of them all.
 
     DOTS_TEST_SCENES=1 bin/dots.app/Contents/MacOS/dots | grep scene-test
+
+`DOTS_TEST_ONLY=<text>` tests only the scenes whose names contain it, and
+`DOTS_TEST_MEDIA=<file>` (or `syphon:<app>/<server>`) gives them media. With a
+video or Syphon feed the frames it saves can come out wrong, as macOS has to
+be let run during the test; trust the scene lines, and check the pictures in
+dots itself. `DOTS_TEST_AUDIO_DEVICE=<name>` opens that audio input as dots
+would for 15 s and quits, for checking what an input does to other gear.
 
 ### The library: presets and files
 

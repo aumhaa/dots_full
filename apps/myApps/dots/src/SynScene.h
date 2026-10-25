@@ -10,15 +10,15 @@
 //  come from SynAudio. Controls become ofParameters, with Synesthesia's
 //  smooth, speed, bang and counter behaviours applied each frame.
 //
-//  A scene's script.js runs each frame before the passes (SynScript). Not yet:
-//  media input (syn_UserImage is empty, so scenes take their no-media path),
-//  and the song-change transitions (each takes a random value when the scene
-//  loads).
+//  A scene's script.js runs each frame before the passes (SynScript), and its
+//  media (syn_UserImage) comes from MediaInput. Not yet: the song-change
+//  transitions (each takes a random value when the scene loads).
 //
 
 #pragma once
 
 #include "ShaderSource.h"
+#include "MediaInput.h"
 
 class SynAudio;
 class SynScript;
@@ -26,7 +26,8 @@ class SynScript;
 class SynScene : public ShaderSource {
 public:
     // Out of line, where SynScript is complete
-    explicit SynScene(const SynAudio *audio = nullptr);
+    // media is what scenes get as syn_UserImage; null or empty for none
+    explicit SynScene(const SynAudio *audio = nullptr, const ShaderMedia *media = nullptr);
     ~SynScene();
 
     bool load(const string &folder) override;
@@ -85,6 +86,7 @@ private:
     void allocatePass(Pass &pass, int width, int height);
 
     const SynAudio *audio;
+    const ShaderMedia *media;
     vector<std::unique_ptr<Control>> controls;
     vector<Pass> passes;               // the scene's PASSES, then the picture
     std::map<string, ofTexture> images;
@@ -94,5 +96,6 @@ private:
 
     ofShader shader;
     ofTexture blank;                   // syn_UserImage, with no media
+    float mediaType() const { return media && media->texture ? media->type : 0; }
     glm::vec2 quadSize{0};             // the picture size the passes are allocated for
 };

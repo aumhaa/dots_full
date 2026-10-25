@@ -12,6 +12,7 @@
 
 #include "ofMain.h"
 #include "ShaderSource.h"
+#include "MediaInput.h"
 
 class SynAudio;
 
@@ -26,6 +27,10 @@ public:
 
     // The latest audio for ISF's audio inputs: samples (-1 to 1) and spectrum (0 to 1)
     void setAudioInput(const float *samples, int sampleCount, const float *bins, int binCount);
+
+    // Media for Synesthesia scenes: choose it here, and update it each frame before render()
+    MediaInput &getMedia() { return media; }
+    void updateMedia(ofFbo &flames, ofFbo &milkdrop);
     ofFbo &getFbo() { return fbo; }
 
     void next();
@@ -88,6 +93,8 @@ private:
     std::filesystem::file_time_type loadedFileTime;
 
     ofTexture audioWaveform, audioSpectrum;   // one row each, for ISF's audio and audioFFT inputs
+    MediaInput media;
+    ShaderMedia currentMedia;                 // what scenes see this frame
 
     ofFbo fbo;
     float time = 0, lastFrameTime = 0;

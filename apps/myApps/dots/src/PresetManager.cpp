@@ -114,6 +114,9 @@ ofJson PresetManager::capture(int module, bool globalIncludesLights) {
             ofSerialize(inputs, app.shaderEngine->getShader().parameters);
             state["settings"] = settings;
             state["inputs"] = inputs;
+            // The settings hold the kind of media; which file or Syphon feed is here
+            MediaInput &media = app.shaderEngine->getMedia();
+            state["media"] = {{"file", media.getFile()}, {"syphonServer", media.getSyphonServer()}, {"syphonApp", media.getSyphonApp()}};
             break;
         }
 
@@ -204,6 +207,16 @@ void PresetManager::applyModule(int module, const ofJson &state, float fade) {
         }
 
         case PRESET_SHADER: {
+            if (state.contains("media") && state["media"].is_object()) {
+                MediaInput &media = app.shaderEngine->getMedia();
+                const ofJson &saved = state["media"];
+                string file = saved.value("file", ""), server = saved.value("syphonServer", ""), syphonApp = saved.value("syphonApp", "");
+                if (!file.empty() && file != media.getFile()) media.loadFile(file);
+                if ((!server.empty() || !syphonApp.empty()) && (server != media.getSyphonServer() || syphonApp != media.getSyphonApp())) {
+                    media.useSyphon(server, syphonApp);
+                }
+            }
+            // The settings then pick which kind is in use
             if (state.contains("settings")) fader.apply(state["settings"], gui.shaderParams);
             string shader = state.value("shader", "");
             if (!shader.empty() && shader != app.shaderEngine->getCurrentPath()) {

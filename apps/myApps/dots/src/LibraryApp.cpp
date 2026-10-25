@@ -62,6 +62,10 @@ void LibraryApp::update() {
         refreshLists();
         lastRefresh = ofGetElapsedTimef();
     }
+    if (ofGetElapsedTimef() - lastMediaScan > 5) {
+        mediaFiles = MediaInput::listFiles();
+        lastMediaScan = ofGetElapsedTimef();
+    }
 }
 
 void LibraryApp::refreshLists() {
@@ -367,6 +371,40 @@ void LibraryApp::drawFiles() {
             }
             ImGui::EndListBox();
         }
+    }
+
+    // Media for Synesthesia scenes: the other engines, Syphon feeds, image and video files
+    if (ImGui::CollapsingHeader("Media for Synesthesia scenes")) {
+        MediaInput &media = app->shaderEngine->getMedia();
+        ImGui::TextDisabled("now: %s; double-click to use", media.describe().c_str());
+        mediaFilter.Draw("search##media", -FLT_MIN);
+        if (ImGui::BeginListBox("##media", ImVec2(-FLT_MIN, 12 * ImGui::GetTextLineHeightWithSpacing()))) {
+            // id keeps rows with the same label apart
+            auto row = [&](const string &label, const string &id, bool current, std::function<void()> action) {
+                if (!mediaFilter.PassFilter(label.c_str())) return;
+                if (ImGui::Selectable((label + "##" + id).c_str(), current, ImGuiSelectableFlags_AllowDoubleClick)
+                    && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
+                    app->post(action);
+                }
+            };
+            row("none", "none", media.getKind() == MediaInput::NONE, [&media]() { media.select(MediaInput::NONE); });
+            row("flames", "flames", media.getKind() == MediaInput::FLAMES, [&media]() { media.select(MediaInput::FLAMES); });
+            row("MilkDrop", "milkdrop", media.getKind() == MediaInput::MILKDROP, [&media]() { media.select(MediaInput::MILKDROP); });
+            for (const ofxSyphonServerDescription &server : media.getSyphonServers()) {
+                string serverName = server.serverName, appName = server.appName;
+                bool current = media.getKind() == MediaInput::SYPHON && media.getSyphonServer() == serverName && media.getSyphonApp() == appName;
+                row("Syphon: " + appName + (serverName.empty() ? "" : " - " + serverName), "syphon" + appName + serverName, current,
+                    [&media, serverName, appName]() { media.useSyphon(serverName, appName); });
+            }
+            for (const string &file : mediaFiles) {
+                // The folder it's in, and its name
+                std::filesystem::path filePath(file);
+                string label = filePath.parent_path().filename().string() + "/" + filePath.filename().string();
+                row(label, file, media.getKind() == MediaInput::FILE && media.getFile() == file, [&media, file]() { media.loadFile(file); });
+            }
+            ImGui::EndListBox();
+        }
+        if (mediaFiles.empty()) ImGui::TextDisabled("no files in Synesthesia's media folders or bin/data/media");
     }
 
     // Light snapshots (the venue's lighting)

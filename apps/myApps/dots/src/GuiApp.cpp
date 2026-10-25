@@ -137,6 +137,7 @@ void GuiApp::setup() {
     shaderParams.add(shaderRunning.set("running", true));
     shaderParams.add(shaderAnimatedOnly.set("animated only", true));
     shaderParams.add(shaderSources.set("kinds: all/ISF/syn", 0, 0, 2));
+    shaderParams.add(shaderMedia.set("media (0-4)", 0, 0, 4));
     shaderGui.setup(shaderParams);
     shaderGui.add(prevShaderBtn.setup("Prev shader  <"));
     shaderGui.add(nextShaderBtn.setup("Next shader  >"));
@@ -400,7 +401,8 @@ void GuiApp::draw() {
     if (status.size() > 26) {
         ofDrawBitmapString(status.substr(26, 26), shaderGui.getPosition().x, statusY + 14);
     }
-    if (shaderPaused) ofDrawBitmapString("shader paused", shaderGui.getPosition().x, statusY + 28);
+    string mediaLine = (shaderPaused ? "paused; " : "") + string("media: ") + shaderEngine->getMedia().describe();
+    ofDrawBitmapString(mediaLine.substr(0, 26), shaderGui.getPosition().x, statusY + 28);
     shaderInputsGui.draw();
     milkdropGui.draw();
     if (!milkdropPresetName.empty()) {

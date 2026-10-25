@@ -7,10 +7,12 @@
 #include "ISFShader.h"
 #include "SynScene.h"
 #include "SynAudio.h"
+#include <CoreFoundation/CoreFoundation.h>
 
 void ShaderEngine::setup(int width, int height, const SynAudio *synAudio) {
     audio = synAudio;
     shader = makeSource("");
+    media.setup();
     vector<string> folders = {
         "/Library/Graphics/ISF",
         ofFilePath::join(ofFilePath::getUserHomeDir(), "Library/Graphics/ISF"),
@@ -65,7 +67,7 @@ void ShaderEngine::addSynesthesiaFolder(const string &folder) {
 }
 
 std::unique_ptr<ShaderSource> ShaderEngine::makeSource(const string &path) {
-    if (!path.empty() && SynScene::isScene(path)) return std::make_unique<SynScene>(audio);
+    if (!path.empty() && SynScene::isScene(path)) return std::make_unique<SynScene>(audio, &currentMedia);
     return std::make_unique<ISFShader>(&audioWaveform, &audioSpectrum);
 }
 
@@ -83,6 +85,11 @@ static void uploadRow(ofTexture &texture, const float *values, int count, float 
         texture.setTextureMinMagFilter(GL_LINEAR, GL_LINEAR);
     }
     texture.loadData(rgba.data(), count, 1, GL_RGBA);
+}
+
+void ShaderEngine::updateMedia(ofFbo &flames, ofFbo &milkdrop) {
+    media.update(flames, milkdrop);
+    currentMedia = media.get();
 }
 
 void ShaderEngine::setAudioInput(const float *samples, int sampleCount, const float *bins, int binCount) {
@@ -253,6 +260,19 @@ void ShaderEngine::testAll(bool includeISF) {
     for (std::size_t i = 0; i < wave.size(); ++i) wave[i] = 0.8f * std::sin(TWO_PI * 4 * i / wave.size());
     for (std::size_t i = 0; i < bins.size(); ++i) bins[i] = 1 - (float)i / bins.size();
     setAudioInput(wave.data(), wave.size(), bins.data(), bins.size());
+    // DOTS_TEST_MEDIA=file gives every scene that image or video as its media;
+    // =syphon:app/server, that Syphon feed
+    const char *testMedia = getenv("DOTS_TEST_MEDIA");
+    bool testSyphon = testMedia && string(testMedia).rfind("syphon:", 0) == 0;
+    if (testSyphon) {
+        vector<string> names = ofSplitString(string(testMedia).substr(7), "/");
+        media.useSyphon(names.size() > 1 ? names[1] : "", names[0]);
+    } else if (testMedia) {
+        media.loadFile(testMedia);
+    }
+    // A video plays in real time, so frames are paced for it; DOTS_TEST_ONLY=text tests just the matching names
+    bool pace = testMedia && (testSyphon || MediaInput::isVideo(testMedia));
+    const char *only = getenv("DOTS_TEST_ONLY");
     {
         // What the analysis makes of it (120 BPM, a beat every half second)
         vector<float> values = testAudio.values();
@@ -262,6 +282,7 @@ void ShaderEngine::testAll(bool includeISF) {
     }
     for (const Entry &entry : allShaders) {
         if (!entry.synesthesia && !includeISF) continue;
+        if (only && ofToLower(entry.name).find(ofToLower(only)) == string::npos) continue;
         std::unique_ptr<ShaderSource> source = makeSource(entry.path);
         if (!source->load(entry.path)) {
             std::cout << "[scene-test] FAIL  " << entry.name << "  (" << entry.path << "): " << source->getError() << std::endl;
@@ -272,6 +293,11 @@ void ShaderEngine::testAll(bool includeISF) {
         for (int frame = 0; frame < 30; ++frame) {
             uint64_t audioStart = ofGetElapsedTimeMicros();
             testSignal(testAudio, 8 + frame / 30.0f, 1 / 30.0f);
+            // Video playback gets ready through the main run loop, which isn't running yet. Running
+            // it here lets window events through too, which can leave the frames drawn wrong (seen
+            // at half size), so with a video this only shows that scenes compile and the video opens
+            if (pace) CFRunLoopRunInMode(kCFRunLoopDefaultMode, 1 / 30.0, false);
+            if (testMedia) updateMedia(target, target);
             audioMicros += ofGetElapsedTimeMicros() - audioStart;
             source->render(target, frame / 30.0f, 1 / 30.0f, frame);
         }

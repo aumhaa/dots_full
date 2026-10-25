@@ -74,6 +74,7 @@ public:
     ofParameterGroup shaderParams;
     ofParameter<bool> shaderRunning, shaderAnimatedOnly;
     ofParameter<int> shaderSources;   // ShaderEngine::Sources: all, ISF, Synesthesia
+    ofParameter<int> shaderMedia;     // MediaInput::Kind: Synesthesia scenes' media
     ofxPanel shaderGui, shaderInputsGui;
     ofxButton prevShaderBtn, nextShaderBtn;
     void prevShaderPressed();

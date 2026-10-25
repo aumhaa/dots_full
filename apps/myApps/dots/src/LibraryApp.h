@@ -58,5 +58,9 @@ private:
     // Synesthesia scenes' preview images, loaded when first shown; null if one can't be
     const ofTexture *thumbnail(const string &file);
     std::map<string, ofTexture> thumbnails;
+    // Image and video files for Synesthesia scenes' media, rescanned every few seconds
+    vector<string> mediaFiles;
+    float lastMediaScan = -10;
+    ImGuiTextFilter mediaFilter;
     vector<int> lightSnapshots;
 };
