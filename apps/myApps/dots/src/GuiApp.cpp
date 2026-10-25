@@ -115,6 +115,7 @@ void GuiApp::setup() {
     // State manager must be set up first
     displayGui.setup(stateManager->activeScene.displayParameters);
     trackParamsGui.setup(stateManager->activeTrack.displayParameters);
+    locksGui.setup(stateManager->locks);
     colorSections(displayGui);
     colorSections(trackParamsGui);
     int milkdropColor = twisterColorForSection("MilkDrop");
@@ -175,6 +176,7 @@ void GuiApp::setup() {
     trackParamsGui.setPosition(510, 75);
     trackControlGui.setPosition(trackParamsGui.getPosition().x, trackParamsGui.getPosition().y + trackParamsGui.getHeight() + 10);
     displayGui.setPosition(trackControlGui.getPosition().x + trackControlGui.getWidth() + 10, 15);
+    locksGui.setPosition(trackControlGui.getPosition().x, trackControlGui.getPosition().y + trackControlGui.getHeight() + 10);
     lightsGui.setPosition(displayGui.getPosition().x + displayGui.getWidth() + 10, 15);
     mixerGui.setPosition(metaGui.getPosition().x, metaGui.getPosition().y + metaGui.getHeight() + 10);
     shaderGui.setPosition(lightsGui.getPosition().x + lightsGui.getWidth() + 10, 15);
@@ -402,6 +404,7 @@ void GuiApp::draw() {
     displayGui.draw();
     metaGui.draw();
     trackParamsGui.draw();
+    locksGui.draw();
     trackControlGui.draw();
 }
 

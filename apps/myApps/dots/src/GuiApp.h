@@ -101,6 +101,7 @@ public:
 
     ofxPanel analysisGui, inputGui, debugGui, metaGui;
     ofxPanel trackParamsGui, displayGui;
+    ofxPanel locksGui;   // the flames' block locks
 
     // To mirror from ofApp
     float frameRate, pctParticles;

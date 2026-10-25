@@ -23,6 +23,14 @@ and CC 28) with a crossfade between them (CC 21). An engine only works while
 it's running and something shows it (the mixer, the lights' feed B, or for
 the shader its own Syphon feed); otherwise it holds its last frame.
 
+### Flames block locks
+
+The Locks panel (under Tracks and Scenes) has a check for each block of the
+flames' scene: audio analysis, drawing, speed, dots, lines, audio effects
+(CC 72-77). A locked block keeps its values through wandering, scene and track
+changes, fades and flames presets; it can still be changed by hand, and its
+values aren't written into the scenes, which keep their own.
+
 ### MilkDrop (projectM)
 
 dots runs MilkDrop presets through libprojectM. The

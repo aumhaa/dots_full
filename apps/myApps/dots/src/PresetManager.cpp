@@ -166,12 +166,24 @@ void PresetManager::applyModule(int module, const ofJson &state, float fade) {
             }
             gui.wandering = state.value("wandering", false);
             fader.apply(state, sm.activeTrack.displayParameters);
+            // Locked blocks keep their values
+            string sceneKey = sm.activeScene.displayParameters.getEscapedName();
+            ofJson sceneValues = state.value(sceneKey, ofJson::object());
+            auto applyUnlocked = [&sm](const ofJson &values, std::function<void(const ofJson &, ofAbstractParameter &)> set) {
+                ofParameterGroup &scene = sm.activeScene.displayParameters;
+                for (std::size_t i = 0; i < scene.size(); ++i) {
+                    if (scene.getType(i) != typeid(ofParameterGroup).name()) continue;
+                    ofParameterGroup block = scene.getGroup(i);
+                    if (!sm.isLocked(block.getName())) set(values, block);
+                }
+            };
             if (sameScene) {
-                fader.apply(state, sm.activeScene.displayParameters);
+                applyUnlocked(sceneValues, [&fader](const ofJson &values, ofAbstractParameter &block) { fader.apply(values, block); });
             } else {
                 // The scene fade carries the scene's own values; the preset's land at the end
-                ofJson sceneValues = state;
-                fader.atEnd([&sm, sceneValues]() { ofDeserialize(sceneValues, sm.activeScene.displayParameters); });
+                fader.atEnd([&sm, sceneValues, applyUnlocked]() {
+                    applyUnlocked(sceneValues, [](const ofJson &values, ofAbstractParameter &block) { ofDeserialize(values, block); });
+                });
             }
             break;
         }

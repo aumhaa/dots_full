@@ -127,6 +127,14 @@ void StateManager::setup() {
     wasFading = false;
     fadeFrames = 100;
 
+    locks.setName("Locks");
+    locks.add(lockAudioAnalysis.set("audio analysis", false));
+    locks.add(lockDrawing.set("drawing", false));
+    locks.add(lockSpeed.set("speed", false));
+    locks.add(lockDots.set("dots", false));
+    locks.add(lockLines.set("lines", false));
+    locks.add(lockAudioEffects.set("audio effects", false));
+
     // No genome in activeScene yet
     activeScene.setupParams();
     activeTrack.setupParams();
@@ -485,6 +493,32 @@ void StateManager::advanceTrack() {
     ofNotifyEvent(onTrackChange, trackIdx);
 }
 
+bool StateManager::isLocked(const string &groupName) {
+    if (groupName == "Audio Analysis") return lockAudioAnalysis;
+    if (groupName == "Drawing") return lockDrawing;
+    if (groupName == "Speed") return lockSpeed;
+    if (groupName == "Dots") return lockDots;
+    if (groupName == "Lines") return lockLines;
+    if (groupName == "Audio Effects") return lockAudioEffects;
+    return false;
+}
+
+static void copyUnlockedBlocks(StateManager &sm, const ofParameterGroup &from, const ofParameterGroup &to) {
+    for (std::size_t i = 0; i < from.size(); ++i) {
+        if (from.getType(i) != typeid(ofParameterGroup).name()) continue;
+        const ofParameterGroup &block = from.getGroup(i);
+        if (!sm.isLocked(block.getName())) copyParameters(block, to.getGroup(i));
+    }
+}
+
+void StateManager::loadActiveScene(DotsScene &scene) {
+    copyUnlockedBlocks(*this, scene.displayParameters, activeScene.displayParameters);
+}
+
+void StateManager::storeActiveScene(DotsScene &scene) {
+    copyUnlockedBlocks(*this, activeScene.displayParameters, scene.displayParameters);
+}
+
 void StateManager::selectTrack(int index) {
     if (index < 0 || index >= tracks.size()) return;
 
@@ -512,7 +546,7 @@ void StateManager::fadeToScene(int index, int frames) {
         return;
     }
     // The usual forward fade, with the target scene standing in as the next one
-    activeScene.copyParamsTo(*currScene);
+    storeActiveScene(*currScene);
     nextScene = getTrack().scenes[index];
     fadeTargetScene = index;
     fadeTargetFrames = frames;
@@ -531,7 +565,7 @@ int StateManager::trackIndexForId(int trackId) {
 
 void StateManager::saveTrack() {
     cout << "Save track" << endl;
-    activeScene.copyParamsTo(*currScene);
+    storeActiveScene(*currScene);
     activeTrack.copyParamsTo(getTrack());
     getTrack().setGenomesFromScenes();
     serializeCurrentTrackToFile();
@@ -542,7 +576,7 @@ void StateManager::fadeSceneFwd() {
     if (wandering) return;
 
     if (!fading) {
-        activeScene.copyParamsTo(*currScene);
+        storeActiveScene(*currScene);
 
         fading = true;
         fadeStartFrame = ofGetFrameNum();
@@ -564,7 +598,7 @@ void StateManager::fadeSceneRev() {
         fadeStartFrame = ofGetFrameNum();
         fadeForward = false;
     } else {
-        currScene->copyParamsTo(activeScene);
+        loadActiveScene(*currScene);
         fading = false;
     }
 }
@@ -587,14 +621,14 @@ void StateManager::regressScene() {
 
     // Save what we're coming from
     if (currScene && !wandering && !fading) {
-        activeScene.copyParamsTo(*currScene);
+        storeActiveScene(*currScene);
     }
 
     currScene = tracks[trackIdx].scenes[sceneIdx];
     nextScene = tracks[trackIdx].scenes[nextIdx];
 
     // Load what we're going to
-    currScene->copyParamsTo(activeScene);
+    loadActiveScene(*currScene);
 
     ofNotifyEvent(onSceneChange, sceneIdx);
 }
@@ -617,21 +651,21 @@ void StateManager::advanceScene() {
 
     // Save what we're coming from
     if (currScene && !wandering && !fading) {
-        activeScene.copyParamsTo(*currScene);
+        storeActiveScene(*currScene);
     }
 
     currScene = tracks[trackIdx].scenes[sceneIdx];
     nextScene = tracks[trackIdx].scenes[nextIdx];
 
     // Load what we're going to
-    currScene->copyParamsTo(activeScene);
+    loadActiveScene(*currScene);
 
     ofNotifyEvent(onSceneChange, sceneIdx);
 }
 
 void StateManager::reloadScene() {
     cout << "Reload scene" << endl;
-    currScene->copyParamsTo(activeScene);
+    loadActiveScene(*currScene);
     getTrack().setGenomesFromScenes();
 
     ofNotifyEvent(onSceneChange, sceneIdx);
@@ -691,25 +725,25 @@ void StateManager::createTrack() {
 void StateManager::applyParameterInterpolation(float t) {
     if (t < 0.001) return;
     
-    activeScene.pointRadiusAudioScaleAmt.set(ofLerp(currScene->pointRadiusAudioScaleAmt.get(), nextScene->pointRadiusAudioScaleAmt.get(), t));
-    activeScene.pointRadiusAudioScale.set(ofLerp(currScene->pointRadiusAudioScale.get(), nextScene->pointRadiusAudioScale.get(), t));
-    activeScene.fftDecayRate.set(ofLerp(currScene->fftDecayRate.get(), nextScene->fftDecayRate.get(), t));
-    activeScene.rmsMultiple.set(ofLerp(currScene->rmsMultiple.get(), nextScene->rmsMultiple.get(), t));
-    activeScene.centroidMaxBucket.set(ofLerp(currScene->centroidMaxBucket.get(), nextScene->centroidMaxBucket.get(), t));
-    activeScene.mpxSmoothingFactor.set(ofLerp(currScene->mpxSmoothingFactor.get(), nextScene->mpxSmoothingFactor.get(), t));
-    activeScene.mpySmoothingFactor.set(ofLerp(currScene->mpySmoothingFactor.get(), nextScene->mpySmoothingFactor.get(), t));
-    activeScene.baseSpeed.set(ofLerp(currScene->baseSpeed.get(), nextScene->baseSpeed.get(), t));
-    activeScene.rmsSpeedMult.set(ofLerp(currScene->rmsSpeedMult.get(), nextScene->rmsSpeedMult.get(), t));
-    activeScene.clearSpeed.set(ofLerp(currScene->clearSpeed.get(), nextScene->clearSpeed.get(), t));
-    activeScene.particleAlpha.set(ofLerp(currScene->particleAlpha.get(), nextScene->particleAlpha.get(), t));
-    activeScene.overallScale.set(ofLerp(currScene->overallScale.get(), nextScene->overallScale.get(), t));
-    activeScene.saturationPct.set(ofLerp(currScene->saturationPct.get(), nextScene->saturationPct.get(), t));
-    activeScene.basePointRadius.set(ofLerp(currScene->basePointRadius.get(), nextScene->basePointRadius.get(), t));
-    activeScene.maxLineLength.set(ofLerp(currScene->maxLineLength.get(), nextScene->maxLineLength.get(), t));
-    activeScene.audioEffectSize1.set(ofLerp(currScene->audioEffectSize1.get(), nextScene->audioEffectSize1.get(), t));
-    activeScene.audioEffectSize2.set(ofLerp(currScene->audioEffectSize2.get(), nextScene->audioEffectSize2.get(), t));
-    activeScene.audioEffectSize3.set(ofLerp(currScene->audioEffectSize3.get(), nextScene->audioEffectSize3.get(), t));
-    activeScene.audioEffectSize4.set(ofLerp(currScene->audioEffectSize4.get(), nextScene->audioEffectSize4.get(), t));
+    if (!lockDots) activeScene.pointRadiusAudioScaleAmt.set(ofLerp(currScene->pointRadiusAudioScaleAmt.get(), nextScene->pointRadiusAudioScaleAmt.get(), t));
+    if (!lockDots) activeScene.pointRadiusAudioScale.set(ofLerp(currScene->pointRadiusAudioScale.get(), nextScene->pointRadiusAudioScale.get(), t));
+    if (!lockAudioAnalysis) activeScene.fftDecayRate.set(ofLerp(currScene->fftDecayRate.get(), nextScene->fftDecayRate.get(), t));
+    if (!lockAudioAnalysis) activeScene.rmsMultiple.set(ofLerp(currScene->rmsMultiple.get(), nextScene->rmsMultiple.get(), t));
+    if (!lockAudioAnalysis) activeScene.centroidMaxBucket.set(ofLerp(currScene->centroidMaxBucket.get(), nextScene->centroidMaxBucket.get(), t));
+    if (!lockAudioAnalysis) activeScene.mpxSmoothingFactor.set(ofLerp(currScene->mpxSmoothingFactor.get(), nextScene->mpxSmoothingFactor.get(), t));
+    if (!lockAudioAnalysis) activeScene.mpySmoothingFactor.set(ofLerp(currScene->mpySmoothingFactor.get(), nextScene->mpySmoothingFactor.get(), t));
+    if (!lockSpeed) activeScene.baseSpeed.set(ofLerp(currScene->baseSpeed.get(), nextScene->baseSpeed.get(), t));
+    if (!lockSpeed) activeScene.rmsSpeedMult.set(ofLerp(currScene->rmsSpeedMult.get(), nextScene->rmsSpeedMult.get(), t));
+    if (!lockDrawing) activeScene.clearSpeed.set(ofLerp(currScene->clearSpeed.get(), nextScene->clearSpeed.get(), t));
+    if (!lockDrawing) activeScene.particleAlpha.set(ofLerp(currScene->particleAlpha.get(), nextScene->particleAlpha.get(), t));
+    if (!lockDrawing) activeScene.overallScale.set(ofLerp(currScene->overallScale.get(), nextScene->overallScale.get(), t));
+    if (!lockDrawing) activeScene.saturationPct.set(ofLerp(currScene->saturationPct.get(), nextScene->saturationPct.get(), t));
+    if (!lockDots) activeScene.basePointRadius.set(ofLerp(currScene->basePointRadius.get(), nextScene->basePointRadius.get(), t));
+    if (!lockLines) activeScene.maxLineLength.set(ofLerp(currScene->maxLineLength.get(), nextScene->maxLineLength.get(), t));
+    if (!lockAudioEffects) activeScene.audioEffectSize1.set(ofLerp(currScene->audioEffectSize1.get(), nextScene->audioEffectSize1.get(), t));
+    if (!lockAudioEffects) activeScene.audioEffectSize2.set(ofLerp(currScene->audioEffectSize2.get(), nextScene->audioEffectSize2.get(), t));
+    if (!lockAudioEffects) activeScene.audioEffectSize3.set(ofLerp(currScene->audioEffectSize3.get(), nextScene->audioEffectSize3.get(), t));
+    if (!lockAudioEffects) activeScene.audioEffectSize4.set(ofLerp(currScene->audioEffectSize4.get(), nextScene->audioEffectSize4.get(), t));
 }
 
 void StateManager::serializeCurrentTrackToFile() {

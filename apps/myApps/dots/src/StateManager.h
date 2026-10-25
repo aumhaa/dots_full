@@ -313,6 +313,15 @@ public:
     void fadeToScene(int index, int frames);
     int trackIndexForId(int trackId);
 
+    // Locks: a locked block of the flames' scene keeps its values through
+    // wandering, scene and track changes, fades and presets; it can still be
+    // changed by hand, and isn't written into the scenes
+    ofParameterGroup locks;
+    ofParameter<bool> lockAudioAnalysis, lockDrawing, lockSpeed, lockDots, lockLines, lockAudioEffects;
+    bool isLocked(const string &groupName);   // a block by its group's name, e.g. "Audio Analysis"
+    void loadActiveScene(DotsScene &scene);   // scene -> activeScene, unlocked blocks only
+    void storeActiveScene(DotsScene &scene);  // activeScene -> scene, unlocked blocks only
+
     void fadeSceneFwd();
     void fadeSceneRev();
     void regressScene();
