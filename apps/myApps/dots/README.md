@@ -35,7 +35,7 @@ into `bin/data/projectM` (not in git) by:
 because drawing into our own framebuffer (`projectm_opengl_render_frame_fbo`)
 arrives in projectM 4.2, which isn't released yet.
 
-MilkDrop hears the same audio as the flames (not in MP3 mode). The control
+MilkDrop hears the same audio as the flames. The control
 window's MilkDrop panel has running, seconds per preset, lock and shuffle, and
 previous/next preset (also `[` and `]`, and notes 5 and 6 on channel 1).
 
@@ -51,6 +51,21 @@ The Shader panel has running (CC 29) and previous/next shader (`<` and `>`,
 notes 7 and 8); the shader's own inputs get a panel of their own, rebuilt for
 each shader. A shader reloads when its file changes, so it can be edited live.
 Its output is also published on its own Syphon feed, "dots shader".
+
+### The library: presets and files
+
+The "dots library" window (ImGui; "show library (l)" in the Meta panel, its
+close button only hides it) has two tabs.
+
+**Presets**: presets for each module (flames, MilkDrop, shader, lights) and
+global ones (the mixer plus every module; lights only with "save with
+lights", since they're usually per venue), saved as JSON in
+`bin/data/presets/<module>/<name>.json`. Double-click to recall; Save new,
+Overwrite and Delete (which moves the file to a `deleted/` folder beside it).
+
+**Files**: flames tracks and their scenes, every MilkDrop preset (with
+search), every shader (static ones marked), the light snapshots, and buttons
+that open each folder in Finder.
 
 ### Pausing the engines
 

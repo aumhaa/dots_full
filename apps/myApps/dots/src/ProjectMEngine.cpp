@@ -48,6 +48,7 @@ void ProjectMEngine::setup(int width, int height, const string &dataPath) {
     projectm_playlist_set_shuffle(playlist, true);
     projectm_playlist_set_preset_switched_event_callback(playlist, &ProjectMEngine::presetSwitched, this);
     string presets = ofFilePath::join(dataPath, "presets");
+    presetsFolder = presets;
     uint32_t added = projectm_playlist_add_path(playlist, presets.c_str(), true, false);
     ofLogNotice("ProjectMEngine") << added << " presets from " << presets;
     if (added > 0) nextPreset(true);
@@ -125,13 +126,27 @@ string ProjectMEngine::getPresetName() {
     return presetName;
 }
 
+string ProjectMEngine::getPresetPath() {
+    std::lock_guard<std::mutex> lock(nameMutex);
+    return presetPath;
+}
+
+void ProjectMEngine::loadPresetFile(const string &path, bool smooth) {
+    if (!projectM || !ofFile::doesFileExist(path, false)) return;
+    projectm_load_preset_file(projectM, path.c_str(), smooth);
+    std::lock_guard<std::mutex> lock(nameMutex);
+    presetName = ofFilePath::getBaseName(path);
+    presetPath = path;
+}
+
 void ProjectMEngine::presetSwitched(bool isHardCut, unsigned int index, void *userData) {
     ProjectMEngine *engine = static_cast<ProjectMEngine *>(userData);
     char *path = projectm_playlist_item(engine->playlist, index);
     if (!path) return;
-    string name = ofFilePath::getBaseName(path);
+    string fullPath = path;
     projectm_playlist_free_string(path);
 
     std::lock_guard<std::mutex> lock(engine->nameMutex);
-    engine->presetName = name;
+    engine->presetName = ofFilePath::getBaseName(fullPath);
+    engine->presetPath = fullPath;
 }

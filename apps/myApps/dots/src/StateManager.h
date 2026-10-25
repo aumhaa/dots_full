@@ -306,6 +306,11 @@ public:
     void createTrack();
     DotsTrack& getTrack();
 
+    // Jump straight to a track (by index into tracks) or a scene of the current track
+    void selectTrack(int index);
+    void selectScene(int index);
+    int trackIndexForId(int trackId);
+
     void fadeSceneFwd();
     void fadeSceneRev();
     void regressScene();

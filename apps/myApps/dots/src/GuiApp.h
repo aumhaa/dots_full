@@ -42,7 +42,7 @@ public:
     ofParameterGroup metaParams;
     ofParameter<bool> wandering;
     ofParameter<int> fadeFrames;
-    ofParameter<bool> showViewer;
+    ofParameter<bool> showViewer, showLibrary;
     ofParameter<bool> flamesRunning;   // off: the flames stop processing and hold their last frame
     ofParameter<int> maxFps;           // frame-rate cap, so paused engines free the CPU instead of speeding up the loop
     bool flamesPaused = false;         // mirrored from ofApp: paused by hand or by a full MilkDrop mix

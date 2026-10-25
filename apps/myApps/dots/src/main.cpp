@@ -4,6 +4,7 @@
 #include "ofApp.h"
 #include "StateManager.h"
 #include "MidiController.h"
+#include "LibraryApp.h"
 
 //========================================================================
 int main( ){
@@ -23,6 +24,11 @@ int main( ){
     settings.resizable = true;
     settings.shareContextWith = mainWindow;
     shared_ptr<ofAppBaseWindow> guiWindow = ofCreateWindow(settings);
+
+    // The library: presets and the file browser
+    settings.setSize(520, 760);
+    settings.setPosition(ofVec2f(80, 60));
+    shared_ptr<ofAppBaseWindow> libraryWindow = ofCreateWindow(settings);
 
 
     shared_ptr<StateManager> stateManager(new StateManager());
@@ -51,7 +57,12 @@ int main( ){
     midi->add_listeners();
     mainApp->midi = midi;
 
+    shared_ptr<LibraryApp> libraryApp(new LibraryApp());
+    libraryApp->app = mainApp;
+    libraryApp->gui = guiApp;
+
     ofRunApp(guiWindow, guiApp);
+    ofRunApp(libraryWindow, libraryApp);
     ofRunApp(mainWindow, mainApp);
     ofRunMainLoop();
 }

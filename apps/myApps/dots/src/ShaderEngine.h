@@ -28,6 +28,17 @@ public:
     // Only the generators that animate on their own, or the static patterns too
     void setAnimatedOnly(bool animatedOnly);
 
+    // Loads a shader by its file, whether or not it's in the current list
+    void loadPath(const string &path);
+    string getCurrentPath() const { return index >= 0 && index < (int)library.size() ? library[index] : ""; }
+
+    // Every generator found, for the file browser
+    struct Entry {
+        string path;
+        bool animated;
+    };
+    const vector<Entry> &getAllShaders() const { return allShaders; }
+
     // Call about once a second: reloads the shader if its file changed
     void checkForChanges();
 
@@ -42,10 +53,6 @@ public:
 private:
     void load(int newIndex);
 
-    struct Entry {
-        string path;
-        bool animated;
-    };
     vector<Entry> allShaders;   // every single-pass generator found
     vector<string> library;     // the ones on offer now
     bool animatedOnly = true;

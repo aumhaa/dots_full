@@ -477,6 +477,33 @@ void StateManager::advanceTrack() {
     ofNotifyEvent(onTrackChange, trackIdx);
 }
 
+void StateManager::selectTrack(int index) {
+    if (index < 0 || index >= tracks.size()) return;
+
+    activeTrack.copyParamsTo(getTrack());
+    trackIdx = index;
+    getTrack().copyParamsTo(activeTrack);
+
+    sceneIdx = -1;
+    advanceScene();
+
+    ofNotifyEvent(onTrackChange, trackIdx);
+}
+
+void StateManager::selectScene(int index) {
+    if (index < 0 || index >= getTrack().scenes.size()) return;
+    // advanceScene() moves on one from sceneIdx, saving the scene we leave
+    sceneIdx = index - 1;
+    advanceScene();
+}
+
+int StateManager::trackIndexForId(int trackId) {
+    for (int i = 0; i < tracks.size(); ++i) {
+        if (tracks[i].trackId == trackId) return i;
+    }
+    return -1;
+}
+
 void StateManager::saveTrack() {
     cout << "Save track" << endl;
     activeScene.copyParamsTo(*currScene);

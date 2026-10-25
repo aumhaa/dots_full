@@ -11,9 +11,8 @@
 
 #define AUDIO_MODE_NONE     0
 #define AUDIO_MODE_MIC      1
-#define AUDIO_MODE_MP3      2
-#define AUDIO_MODE_NOISE    3
-#define N_AUDIO_MODES       4
+#define AUDIO_MODE_NOISE    2
+#define N_AUDIO_MODES       3
 
 // Try not to conflict with other keys
 #define DOTS_KEY_COMMAND_UP 55555

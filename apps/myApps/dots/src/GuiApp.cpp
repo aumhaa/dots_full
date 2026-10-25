@@ -69,6 +69,7 @@ void GuiApp::setup() {
     metaParams.add(wandering.set("wandering", false));
     metaParams.add(fadeFrames.set("fadeFrames", 100, 0, 200));
     metaParams.add(showViewer.set("show viewer (v)", false));
+    metaParams.add(showLibrary.set("show library (l)", true));
     metaParams.add(flamesRunning.set("flames running", true));
     metaParams.add(maxFps.set("max fps", 30, 10, 60));
     metaGui.setup(metaParams);
@@ -339,8 +340,6 @@ void GuiApp::draw() {
         string audioModeDesc;
         if (audioMode == AUDIO_MODE_MIC) {
             audioModeDesc = "Microphone Input";
-        } else if (audioMode == AUDIO_MODE_MP3) {
-            audioModeDesc = "MP3 Playing";
         } else if (audioMode == AUDIO_MODE_NOISE) {
             audioModeDesc = "White Noise";
         } else {

@@ -63,6 +63,7 @@ void ofApp::setup(){
 
     crossfade = 0;
     shaderEngine->setup(ofGetWidth(), ofGetHeight());
+    presets = std::make_unique<PresetManager>(*this);
     shaderSyphonServer.setName("dots shader");
     projectM.setup(ofGetWidth(), ofGetHeight(), ofToDataPath("projectM", true));
 
@@ -234,11 +235,7 @@ void ofApp::guiUpdate() {
     audioEffectSize3 = stateManager->activeScene.audioEffectSize3;
     audioEffectSize4 = stateManager->activeScene.audioEffectSize4;
 
-    if (audioMode != gui->audioMode) {
-        audioMode = gui->audioMode;
-        if (audioMode != AUDIO_MODE_MP3)
-            mySound.stop();
-    }
+    audioMode = gui->audioMode;
 
     if (soundStreamDevice != gui->soundStreamDevice) {
         soundStreamDevice = gui->soundStreamDevice;
@@ -729,6 +726,11 @@ void ofApp::flameDraw() {
 
 //--------------------------------------------------------------
 void ofApp::update(){
+    // Work posted by the library window
+    vector<std::function<void()>> actions;
+    actions.swap(pendingActions);
+    for (auto &action : actions) action();
+
     // Handle our keypresses
     while (!keyPresses.empty()) {
         handleKey(keyPresses.front());
@@ -742,10 +744,7 @@ void ofApp::update(){
     }
 
     // Copy audio if needed
-    if (audioMode == AUDIO_MODE_MP3) {
-        float *ss = ofSoundGetSpectrum(nFftBuckets);
-        memcpy(fftOutput, ss, sizeof(float) * nFftBuckets);
-    } else if (audioMode == AUDIO_MODE_MIC || audioMode == AUDIO_MODE_NOISE) {
+    if (audioMode == AUDIO_MODE_MIC || audioMode == AUDIO_MODE_NOISE) {
         // No action needed
     } else {
         memset(fftOutput, 0, sizeof(float) * nFftBuckets);
@@ -1022,11 +1021,7 @@ void ofApp::handleKey(int key) {
         else
             stateManager->activeScene.pointRadiusAudioScaleAmt.set(1);
     } else if (key == 's') {
-        gui->audioMode.set(gui->audioMode.get() + 1);
-        if (audioMode >= N_AUDIO_MODES)
-            audioMode = 0;
-        if (audioMode != AUDIO_MODE_MP3)
-            mySound.stop();
+        gui->audioMode.set((gui->audioMode.get() + 1) % N_AUDIO_MODES);
     } else if (key == 'f') {
         ofToggleFullscreen();
         ofHideCursor();
@@ -1037,6 +1032,8 @@ void ofApp::handleKey(int key) {
         stateManager->killCurrent();
     } else if (key == 'v') {
         gui->showViewer = !gui->showViewer;
+    } else if (key == 'l') {
+        gui->showLibrary = !gui->showLibrary;
     } else if (key == '<') {
         shaderEngine->previous();
     } else if (key == '>') {
@@ -1049,30 +1046,6 @@ void ofApp::handleKey(int key) {
         stateManager->regressTrack();
     } else if (key == '.') {
         stateManager->advanceTrack();
-    } else if (key == '0') {
-        mySound.setPosition(mySound.getPosition()-0.02);
-        ofSoundStreamSetup(0, 1, this);
-        mySound.stop();
-    } else if (key == '1') {
-        gui->audioMode.set(AUDIO_MODE_MP3);
-        mySound.loadSound("audio/no_ordinary_window-youtube.mp3", true);
-        mySound.play();
-    } else if (key == '2') {
-        gui->audioMode.set(AUDIO_MODE_MP3);
-        mySound.loadSound("audio/01 - Steve McQueen.mp3", true);
-        mySound.play();
-    } else if (key == '3') {
-        gui->audioMode.set(AUDIO_MODE_MP3);
-        mySound.loadSound("audio/db120c10-01-Sonata No 1 in G Minor BWV 1001 Adagio.mp3", true);
-        mySound.play();
-    } else if (key == '4') {
-        gui->audioMode.set(AUDIO_MODE_MP3);
-        mySound.loadSound("audio/skrillex_bangarang.mp3", true);
-        mySound.play();
-    } else if (key == '9') {
-        mySound.setPosition(mySound.getPosition()-0.02);
-    } else if (key == '8') {
-        mySound.setPosition(mySound.getPosition()+0.02);
     } else {
         // Give the GUI a chance to handle the key if we don't know what it is
         gui->handleKey(key);

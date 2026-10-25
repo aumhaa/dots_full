@@ -82,6 +82,16 @@ void ShaderEngine::load(int newIndex) {
     parametersVersion++;
 }
 
+void ShaderEngine::loadPath(const string &path) {
+    auto found = std::find(library.begin(), library.end(), path);
+    if (found == library.end()) {
+        if (!ofFile::doesFileExist(path, false)) return;
+        library.push_back(path);
+        found = library.end() - 1;
+    }
+    load(found - library.begin());
+}
+
 void ShaderEngine::next() { load(index + 1); }
 void ShaderEngine::previous() { load(index - 1); }
 void ShaderEngine::select(int newIndex) { load(newIndex); }

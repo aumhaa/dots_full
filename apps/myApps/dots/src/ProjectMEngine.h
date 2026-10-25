@@ -35,6 +35,10 @@ public:
     void setPresetLocked(bool locked);
     void setShuffle(bool shuffle);
     string getPresetName();
+    string getPresetPath();
+    const string &getPresetsFolder() const { return presetsFolder; }
+    // Loads one preset file; smooth blends it in over the soft-cut duration
+    void loadPresetFile(const string &path, bool smooth);
     bool isReady() { return projectM != nullptr; }
 
 private:
@@ -52,5 +56,6 @@ private:
     vector<float> pendingSamples, renderSamples;
 
     std::mutex nameMutex;
-    string presetName;
+    string presetName, presetPath;
+    string presetsFolder;
 };
