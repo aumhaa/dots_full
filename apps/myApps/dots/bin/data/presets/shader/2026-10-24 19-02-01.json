@@ -1,0 +1,16 @@
+{
+    "format": 1,
+    "inputs": {
+        "Shader": {
+            "mouse": "0, 0"
+        }
+    },
+    "module": "shader",
+    "settings": {
+        "Shader": {
+            "animated_only": "1",
+            "running": "1"
+        }
+    },
+    "shader": "/Library/Graphics/ISF/BlackCherryCosmos.fs"
+}

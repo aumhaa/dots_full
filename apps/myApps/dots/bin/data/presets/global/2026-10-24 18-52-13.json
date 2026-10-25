@@ -1,0 +1,83 @@
+{
+    "Mixer": {
+        "A__flames_milk_shader_": "1",
+        "B__flames_milk_shader_": "2",
+        "crossfade_A-B": "0.429629"
+    },
+    "flames": {
+        "Scene": {
+            "Audio_Analysis": {
+                "centroidMax__mpx_": "0.35",
+                "fftDecayRate": "0.9",
+                "mpxSmoothingFactor": "0.4",
+                "mpySmoothingFactor": "0.1",
+                "rmsMult__mpy_": "5"
+            },
+            "Audio_Effects": {
+                "effectSize1": "1",
+                "effectSize2": "1",
+                "effectSize3": "1",
+                "effectSize4": "1",
+                "motionId": "0"
+            },
+            "Dots": {
+                "baseDotRadius": "10",
+                "dotAudioScale": "10",
+                "pointRadiusAudioScaleAmt": "1"
+            },
+            "Drawing": {
+                "clearSpeed": "50",
+                "overallScale": "1",
+                "particleAlpha": "50",
+                "saturationPct": "1"
+            },
+            "Lines": {
+                "maxLineLength": "100"
+            },
+            "Speed": {
+                "baseSpeed": "0",
+                "rmsSpeedMult": "30"
+            }
+        },
+        "Track": {
+            "Wander": {
+                "speed": "0.1"
+            }
+        },
+        "scene": 0,
+        "track": 0,
+        "wandering": false
+    },
+    "format": 1,
+    "milkdrop": {
+        "MilkDrop": {
+            "lockPreset": "0",
+            "presetSeconds": "30",
+            "running": "1",
+            "shuffle": "1"
+        },
+        "preset": "Reaction/Liquid Gradient/$$$ Royal - Mashup (367).milk"
+    },
+    "module": "global",
+    "shader": {
+        "inputs": {
+            "Shader": {
+                "c": "0.632",
+                "e": "0.3",
+                "h": "0.5",
+                "j": "0.5",
+                "k": "0.3",
+                "m": "0.3",
+                "s": "0.131",
+                "u": "0.17"
+            }
+        },
+        "settings": {
+            "Shader": {
+                "animated_only": "1",
+                "running": "1"
+            }
+        },
+        "shader": "/Library/Graphics/ISF/Tapestry Fract +.fs"
+    }
+}

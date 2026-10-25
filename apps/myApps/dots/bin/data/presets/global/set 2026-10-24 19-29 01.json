@@ -1,0 +1,134 @@
+{
+    "Mixer": {
+        "A__flames_milk_shader_": "0",
+        "B__flames_milk_shader_": "1",
+        "crossfade_A-B": "0",
+        "preset_fade__s_": "2"
+    },
+    "flames": {
+        "Scene": {
+            "Audio_Analysis": {
+                "centroidMax__mpx_": "0.35",
+                "fftDecayRate": "0.9",
+                "mpxSmoothingFactor": "0.4",
+                "mpySmoothingFactor": "0.1",
+                "rmsMult__mpy_": "5"
+            },
+            "Audio_Effects": {
+                "effectSize1": "1",
+                "effectSize2": "1",
+                "effectSize3": "1",
+                "effectSize4": "1",
+                "motionId": "0"
+            },
+            "Dots": {
+                "baseDotRadius": "10",
+                "dotAudioScale": "10",
+                "pointRadiusAudioScaleAmt": "1"
+            },
+            "Drawing": {
+                "clearSpeed": "50",
+                "overallScale": "1",
+                "particleAlpha": "50",
+                "saturationPct": "1"
+            },
+            "Lines": {
+                "maxLineLength": "100"
+            },
+            "Speed": {
+                "baseSpeed": "0",
+                "rmsSpeedMult": "30"
+            }
+        },
+        "Track": {
+            "Wander": {
+                "speed": "0.1"
+            }
+        },
+        "scene": 0,
+        "track": 0,
+        "wandering": false
+    },
+    "format": 1,
+    "lights": {
+        "Light_1": {
+            "focus": "0.7",
+            "frost": "0.2",
+            "hue": "0.1",
+            "intensity": "0.8",
+            "mode__add_reveal_": "0",
+            "on": "0",
+            "saturation": "0.2",
+            "size": "0.2",
+            "x": "0.2",
+            "y": "0.5"
+        },
+        "Light_2": {
+            "focus": "0.7",
+            "frost": "0.2",
+            "hue": "0.35",
+            "intensity": "0.8",
+            "mode__add_reveal_": "0",
+            "on": "0",
+            "saturation": "0.2",
+            "size": "0.2",
+            "x": "0.4",
+            "y": "0.5"
+        },
+        "Light_3": {
+            "focus": "0.7",
+            "frost": "0.2",
+            "hue": "0.6",
+            "intensity": "0.8",
+            "mode__add_reveal_": "0",
+            "on": "0",
+            "saturation": "0.2",
+            "size": "0.2",
+            "x": "0.6",
+            "y": "0.5"
+        },
+        "Light_4": {
+            "focus": "0.7",
+            "frost": "0.2",
+            "hue": "0.85",
+            "intensity": "0.8",
+            "mode__add_reveal_": "0",
+            "on": "0",
+            "saturation": "0.2",
+            "size": "0.2",
+            "x": "0.8",
+            "y": "0.5"
+        },
+        "ambient": "0.15",
+        "feed_B__flames_milk_light_shader_": "2",
+        "lights_on_feed_A": "1"
+    },
+    "milkdrop": {
+        "MilkDrop": {
+            "lockPreset": "0",
+            "presetSeconds": "30",
+            "running": "1",
+            "shuffle": "1"
+        },
+        "preset": "Hypnotic/Polar Warp/flexi - grind my glitch up [340].milk"
+    },
+    "module": "global",
+    "shader": {
+        "inputs": {
+            "Shader": {
+                "bright": "0.2",
+                "glow_size": "2",
+                "grid_size": "40, 40",
+                "rate": "0.16",
+                "rndseed": "12.9898, 78.233"
+            }
+        },
+        "settings": {
+            "Shader": {
+                "animated_only": "1",
+                "running": "1"
+            }
+        },
+        "shader": "/Library/Graphics/ISF/AnotherGridThingy.fs"
+    }
+}

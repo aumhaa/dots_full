@@ -1,28 +1,29 @@
+<?xml version="1.0"?>
 <Scene>
 	<Audio_Analysis>
-		<fftDecayRate>0.9</fftDecayRate>
-		<centroidMax__mpx_>0.35</centroidMax__mpx_>
-		<rmsMult__mpy_>5</rmsMult__mpy_>
+		<fftDecayRate>0.0969388</fftDecayRate>
+		<centroidMax__mpx_>0.290816</centroidMax__mpx_>
+		<rmsMult__mpy_>6.81122</rmsMult__mpy_>
 		<mpxSmoothingFactor>0.4</mpxSmoothingFactor>
-		<mpySmoothingFactor>0.377551</mpySmoothingFactor>
+		<mpySmoothingFactor>0.714286</mpySmoothingFactor>
 	</Audio_Analysis>
 	<Drawing>
-		<clearSpeed>96.2755</clearSpeed>
-		<particleAlpha>255</particleAlpha>
+		<clearSpeed>231.582</clearSpeed>
+		<particleAlpha>50</particleAlpha>
 		<overallScale>1</overallScale>
-		<saturationPct>0.72449</saturationPct>
+		<saturationPct>1</saturationPct>
 	</Drawing>
 	<Speed>
 		<baseSpeed>0</baseSpeed>
-		<rmsSpeedMult>2.04082</rmsSpeedMult>
+		<rmsSpeedMult>30</rmsSpeedMult>
 	</Speed>
 	<Dots>
-		<pointRadiusAudioScaleAmt>0.27551</pointRadiusAudioScaleAmt>
-		<dotAudioScale>20.1531</dotAudioScale>
-		<baseDotRadius>19.3878</baseDotRadius>
+		<pointRadiusAudioScaleAmt>1</pointRadiusAudioScaleAmt>
+		<dotAudioScale>31.3776</dotAudioScale>
+		<baseDotRadius>25.2551</baseDotRadius>
 	</Dots>
 	<Lines>
-		<maxLineLength>734.694</maxLineLength>
+		<maxLineLength>100</maxLineLength>
 	</Lines>
 	<Audio_Effects>
 		<motionId>1</motionId>
@@ -31,10 +32,65 @@
 		<effectSize3>1</effectSize3>
 		<effectSize4>1</effectSize4>
 	</Audio_Effects>
-<Scene/>
-<Track>
+	<Scene />
+	<Track>
 		<Wander>
 			<speed>0.1</speed>
 		</Wander>
 	</Track>
 </Scene>
+<Lights>
+	<ambient>0.15</ambient>
+	<selected>1</selected>
+	<snapshot>1</snapshot>
+	<lights_on_feed_A>0</lights_on_feed_A>
+	<feed_B__flames_milk_light_>1</feed_B__flames_milk_light_>
+	<Light_1>
+		<on>1</on>
+		<mode__add_reveal_>0</mode__add_reveal_>
+		<intensity>2</intensity>
+		<hue>0.1</hue>
+		<saturation>0.2</saturation>
+		<x>0.501235</x>
+		<y>0.759259</y>
+		<size>0.2</size>
+		<focus>0.7</focus>
+		<frost>0.2</frost>
+	</Light_1>
+	<Light_2>
+		<on>0</on>
+		<mode__add_reveal_>0</mode__add_reveal_>
+		<intensity>0.8</intensity>
+		<hue>0.35</hue>
+		<saturation>0.2</saturation>
+		<x>0.4</x>
+		<y>0.5</y>
+		<size>0.2</size>
+		<focus>0.7</focus>
+		<frost>0.2</frost>
+	</Light_2>
+	<Light_3>
+		<on>0</on>
+		<mode__add_reveal_>0</mode__add_reveal_>
+		<intensity>0.8</intensity>
+		<hue>0.6</hue>
+		<saturation>0.2</saturation>
+		<x>0.6</x>
+		<y>0.5</y>
+		<size>0.2</size>
+		<focus>0.7</focus>
+		<frost>0.2</frost>
+	</Light_3>
+	<Light_4>
+		<on>0</on>
+		<mode__add_reveal_>0</mode__add_reveal_>
+		<intensity>0.8</intensity>
+		<hue>0.85</hue>
+		<saturation>0.2</saturation>
+		<x>0.8</x>
+		<y>0.5</y>
+		<size>0.2</size>
+		<focus>0.7</focus>
+		<frost>0.2</frost>
+	</Light_4>
+</Lights>

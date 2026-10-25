@@ -1,0 +1,23 @@
+{
+    "format": 1,
+    "inputs": {
+        "Shader": {
+            "c": "0.632",
+            "e": "0.3",
+            "h": "0.5",
+            "j": "0.5",
+            "k": "0.3",
+            "m": "0.3",
+            "s": "0.131",
+            "u": "0.17"
+        }
+    },
+    "module": "shader",
+    "settings": {
+        "Shader": {
+            "animated_only": "1",
+            "running": "1"
+        }
+    },
+    "shader": "/Library/Graphics/ISF/Tapestry Fract +.fs"
+}

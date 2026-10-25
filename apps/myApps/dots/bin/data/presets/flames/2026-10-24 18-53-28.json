@@ -1,0 +1,46 @@
+{
+    "Scene": {
+        "Audio_Analysis": {
+            "centroidMax__mpx_": "0.290816",
+            "fftDecayRate": "0.0969388",
+            "mpxSmoothingFactor": "0.4",
+            "mpySmoothingFactor": "0.714286",
+            "rmsMult__mpy_": "6.81122"
+        },
+        "Audio_Effects": {
+            "effectSize1": "1",
+            "effectSize2": "1",
+            "effectSize3": "1",
+            "effectSize4": "1",
+            "motionId": "1"
+        },
+        "Dots": {
+            "baseDotRadius": "25.2551",
+            "dotAudioScale": "31.3776",
+            "pointRadiusAudioScaleAmt": "1"
+        },
+        "Drawing": {
+            "clearSpeed": "231.582",
+            "overallScale": "1",
+            "particleAlpha": "50",
+            "saturationPct": "1"
+        },
+        "Lines": {
+            "maxLineLength": "100"
+        },
+        "Speed": {
+            "baseSpeed": "0",
+            "rmsSpeedMult": "30"
+        }
+    },
+    "Track": {
+        "Wander": {
+            "speed": "0.1"
+        }
+    },
+    "format": 1,
+    "module": "flames",
+    "scene": 1,
+    "track": 0,
+    "wandering": false
+}
