@@ -10,9 +10,10 @@
 //  come from SynAudio. Controls become ofParameters, with Synesthesia's
 //  smooth, speed, bang and counter behaviours applied each frame.
 //
-//  Not yet: script.js (its uniforms are declared and stay at 0), media input
-//  (syn_UserImage is empty, so scenes take their no-media path), and the
-//  song-change transitions (each takes a random value when the scene loads).
+//  A scene's script.js runs each frame before the passes (SynScript). Not yet:
+//  media input (syn_UserImage is empty, so scenes take their no-media path),
+//  and the song-change transitions (each takes a random value when the scene
+//  loads).
 //
 
 #pragma once
@@ -20,10 +21,13 @@
 #include "ShaderSource.h"
 
 class SynAudio;
+class SynScript;
 
 class SynScene : public ShaderSource {
 public:
-    explicit SynScene(const SynAudio *audio = nullptr) : audio(audio) {}
+    // Out of line, where SynScript is complete
+    explicit SynScene(const SynAudio *audio = nullptr);
+    ~SynScene();
 
     bool load(const string &folder) override;
     void render(ofFbo &target, float time, float timeDelta, int frameIndex) override;
@@ -31,9 +35,19 @@ public:
     // A folder with main.glsl and scene.json
     static bool isScene(const string &folder);
 
+    // The first error its script.js hit, if any (the scene runs on regardless)
+    string getScriptError() const;
+
+    // For the script: change controls by name, or a whole UI group, as Synesthesia's
+    // setControl(), setControlNormalized(), randomizeControl() and defaultControl() do
+    enum ControlChange { CONTROL_SET, CONTROL_SET_NORMALIZED, CONTROL_RANDOMIZE, CONTROL_DEFAULT };
+    void changeControls(const string &normalizedName, bool group, int change, const float *values, int count, int dimension);
+    // The last picture's colour at (x, y), 0 to 1 from the bottom left
+    glm::vec3 finalPassPixel(float x, float y);
+
 private:
     struct Control {
-        string uniform, type;
+        string uniform, type, group;
         bool smooth = false, speed = false, counter = false;
         float rate = 0.01f;            // PARAMS: the share of the way a smooth control moves each frame
         float minValue[3] = {0, 0, 0}, maxValue[3] = {1, 1, 1};
@@ -53,7 +67,10 @@ private:
         float envelope = 0;            // bang smooth
         bool rising = false;
         float count = 0;               // bang counter
+        glm::vec3 defaults{0};         // as target() gives them; a dropdown's index
     };
+    void changeControl(Control &control, int change, const float *values, int count, int dimension);
+    void feedScript(float time, int frameIndex, float width, float height, const vector<float> &audioValues);
     void addControl(const ofJson &spec, std::map<string, ofParameterGroup> &groups, vector<string> &groupOrder);
     glm::vec3 target(Control &control);
     void updateControls(float dt);
@@ -72,6 +89,7 @@ private:
     vector<Pass> passes;               // the scene's PASSES, then the picture
     std::map<string, ofTexture> images;
     vector<std::pair<string, int>> vectorUniforms;   // script.js outputs: name, size
+    std::unique_ptr<SynScript> script;
     std::map<string, float> transitionValues;        // HARD_ and SMOOTH_TRANSITIONS
 
     ofShader shader;

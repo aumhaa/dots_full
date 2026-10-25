@@ -293,8 +293,11 @@ void ShaderEngine::testAll(bool includeISF) {
             thumbnails.push_back({entry.name, shot});
         }
         (isBlack ? black : ok)++;
+        SynScene *scene = dynamic_cast<SynScene *>(source.get());
+        string scriptError = scene ? scene->getScriptError() : "";
         std::cout << "[scene-test] " << (isBlack ? "BLACK " : "OK    ") << entry.name << "  mean " << ofToString(mean, 1)
-                  << "  " << ofToString(msPerFrame, 1) << " ms" << (glError ? "  GL error " + ofToString(glError) : "") << std::endl;
+                  << "  " << ofToString(msPerFrame, 1) << " ms" << (glError ? "  GL error " + ofToString(glError) : "")
+                  << (scriptError.empty() ? "" : "  script: " + scriptError) << std::endl;
     }
     audio = liveAudio;
 

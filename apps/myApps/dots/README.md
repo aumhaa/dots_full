@@ -81,10 +81,14 @@ are loaded. dots supplies Synesthesia's built-in functions itself
 `syn_OnBeat`, `syn_BPM` and the rest) from its own audio input
 (`src/SynAudio.cpp`).
 
-Not yet: `script.js` (the uniforms a script sets stay at 0, so scenes that
-lean on one may sit still or show nothing), media (scenes take their
-no-media path), and the song-change transitions (each picks a value when the
-scene loads).
+A scene's `script.js` runs each frame before its passes, in JavaScriptCore
+(part of macOS): it sees the scene's inputs, can change its controls, and
+what it sets becomes uniforms (`src/SynScript.cpp`). Synesthesia's meta
+controls (`meta/brightness` and so on) aren't in dots, so scripts setting them
+do nothing; what scripts print goes to dots's log.
+
+Not yet: media (scenes take their no-media path) and the song-change
+transitions (each picks a value when the scene loads).
 
 To check every scene, run dots from Terminal with `DOTS_TEST_SCENES=1`
 (`=all` adds the ISF shaders): it compiles and runs each for 30 frames with a

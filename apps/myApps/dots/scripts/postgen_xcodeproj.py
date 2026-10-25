@@ -8,6 +8,7 @@
 - Points the Syphon framework flags at the app's local addons/ofxSyphon; the
   generator writes them as if ofxSyphon were in the OF addons folder.
 - Adds libprojectM (libs/projectM, built by scripts/build_projectm.sh).
+- Links JavaScriptCore, which runs Synesthesia scenes' script.js.
 
 Run from the app folder after every projectGenerator run:
 
@@ -64,6 +65,8 @@ def main(path):
         for lib in PROJECTM_LIBS:
             if lib not in ldflags:
                 ldflags.append(lib)
+        if "JavaScriptCore" not in ldflags:
+            ldflags += ["-framework", "JavaScriptCore"]
         settings["OTHER_LDFLAGS"] = ldflags
         headers = settings.get("HEADER_SEARCH_PATHS", ["$(inherited)"])
         if isinstance(headers, str):

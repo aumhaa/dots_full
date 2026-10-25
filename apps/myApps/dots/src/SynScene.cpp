@@ -6,6 +6,7 @@
 #include "SynScene.h"
 #include "SynAudio.h"
 #include "SynLibrary.h"
+#include "SynScript.h"
 #include <regex>
 
 static const char *vertexShader = R"(#version 330
@@ -36,6 +37,13 @@ void main() {
     dots_FragColor = renderMain();
 }
 )";
+
+SynScene::SynScene(const SynAudio *audio) : audio(audio) {}
+SynScene::~SynScene() {}
+
+string SynScene::getScriptError() const {
+    return script ? script->getError() : "";
+}
 
 bool SynScene::isScene(const string &folder) {
     return ofFile::doesFileExist(ofFilePath::join(folder, "main.glsl"), false)
@@ -137,8 +145,10 @@ void SynScene::addControl(const ofJson &spec, std::map<string, ofParameterGroup>
     }
 
     c.output = c.speed ? glm::vec3(0) : target(c);
+    c.defaults = c.type == "dropdown" ? glm::vec3(c.intValue.get()) : target(c);
 
     string group = spec.value("UI_GROUP", "");
+    c.group = group;
     if (group.empty() || group == "ungrouped") {
         parameters.add(*parameter);
     } else {
@@ -203,6 +213,89 @@ void SynScene::updateControls(float dt) {
     }
 }
 
+// The script's inputs: the standard uniforms, the audio, the controls and the transitions
+void SynScene::feedScript(float time, int frameIndex, float width, float height, const vector<float> &audioValues) {
+    auto feed = [this](const string &input, std::initializer_list<float> values) {
+        SynScript::Value value;
+        value.size = values.size();
+        std::copy(values.begin(), values.end(), value.v);
+        script->setInput(input, value);
+    };
+    feed("TIME", {time});
+    feed("FRAMECOUNT", {(float)frameIndex});
+    feed("RENDERSIZE", {width, height});
+    feed("_mouse", {0, 0, 0, 0});
+    feed("_click", {0, 0, 0});
+    feed("_muv", {0.5f, 0.5f});
+    feed("_muvc", {0, 0});
+    feed("syn_MediaType", {0});
+    const vector<string> &audioNames = SynAudio::names();
+    for (std::size_t i = 0; i < audioNames.size(); ++i) feed(audioNames[i], {i < audioValues.size() ? audioValues[i] : 0});
+    for (auto &control : controls) {
+        const Control &c = *control;
+        if (c.type == "xy") feed(c.uniform, {c.output.x, c.output.y});
+        else if (c.type == "color") feed(c.uniform, {c.output.x, c.output.y, c.output.z});
+        else feed(c.uniform, {c.output.x});
+    }
+    for (auto &entry : transitionValues) feed(entry.first, {entry.second});
+}
+
+void SynScene::changeControls(const string &normalizedName, bool group, int change, const float *values, int count, int dimension) {
+    for (auto &control : controls) {
+        const string &controlName = group ? control->group : control->uniform;
+        if (SynScript::normalize(controlName) == normalizedName) changeControl(*control, change, values, count, dimension);
+    }
+}
+
+void SynScene::changeControl(Control &c, int change, const float *values, int count, int dimension) {
+    if (c.type == "dropdown") {
+        int last = c.dropdownValues.size() - 1;
+        if (change == CONTROL_DEFAULT) c.intValue = (int)c.defaults.x;
+        else if (change == CONTROL_RANDOMIZE) c.intValue = (int)ofRandom(last + 1) % (last + 1);
+        else if (count > 0 && change == CONTROL_SET_NORMALIZED) c.intValue = ofClamp((int)std::round(values[0] * last), 0, last);
+        else if (count > 0) {
+            // The option whose value is nearest
+            int best = 0;
+            for (int i = 1; i <= last; ++i) {
+                if (std::abs(c.dropdownValues[i] - values[0]) < std::abs(c.dropdownValues[best] - values[0])) best = i;
+            }
+            c.intValue = best;
+        }
+        return;
+    }
+
+    int dimensions = c.type == "xy" ? 2 : c.type == "color" ? 3 : 1;
+    glm::vec3 next = target(c);
+    for (int d = 0; d < dimensions; ++d) {
+        if (dimension >= 0 && d != dimension) continue;
+        int from = dimension >= 0 ? 0 : d;   // with a dimension given, the one value is for it
+        float lo = c.type == "color" ? 0 : c.minValue[d], hi = c.type == "color" ? 1 : c.maxValue[d];
+        if (change == CONTROL_SET && from < count) next[d] = values[from];
+        else if (change == CONTROL_SET_NORMALIZED && from < count) next[d] = lo + values[from] * (hi - lo);
+        else if (change == CONTROL_RANDOMIZE) next[d] = ofRandom(lo, hi);
+        else if (change == CONTROL_DEFAULT) next[d] = c.defaults[d];
+    }
+    float lo = c.minValue[0], hi = c.maxValue[0];
+    if (c.type == "toggle") c.boolValue = next.x > (lo + hi) / 2;
+    else if (c.type == "bang") c.banged |= (change == CONTROL_SET || change == CONTROL_SET_NORMALIZED) && next.x > (lo + hi) / 2;
+    else if (c.type == "xy") c.pointValue = glm::vec2(next.x, next.y);
+    else if (c.type == "color") c.colorValue = ofFloatColor(next.x, next.y, next.z);
+    else c.floatValue = ofClamp(next.x, std::min(lo, hi), std::max(lo, hi));
+}
+
+glm::vec3 SynScene::finalPassPixel(float x, float y) {
+    if (passes.empty()) return glm::vec3(0);
+    ofFbo &picture = passes.back().buffers[passes.back().front];
+    if (!picture.isAllocated()) return glm::vec3(0);
+    GLint previous = 0;
+    glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &previous);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, picture.getId());
+    float rgba[4] = {0, 0, 0, 0};
+    glReadPixels(ofClamp(x, 0, 1) * (picture.getWidth() - 1), ofClamp(y, 0, 1) * (picture.getHeight() - 1), 1, 1, GL_RGBA, GL_FLOAT, rgba);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, previous);
+    return glm::vec3(rgba[0], rgba[1], rgba[2]);
+}
+
 void SynScene::allocatePass(Pass &pass, int width, int height) {
     ofFboSettings settings;
     settings.width = std::max(1, width);
@@ -231,6 +324,7 @@ bool SynScene::load(const string &folder) {
     images.clear();
     vectorUniforms.clear();
     transitionValues.clear();
+    script.reset();
     parameters.clear();
     parameters.setName("Shader");
     quadSize = glm::vec2(0);
@@ -254,8 +348,10 @@ bool SynScene::load(const string &folder) {
         return std::regex_search(source, std::regex("uniform\\s+\\w+\\s+" + uniform + "\\b"));
     };
     string uniforms;
+    std::set<string> declared;
     auto declare = [&](const string &type, const string &uniform) {
-        if (!declares(uniform)) uniforms += "uniform " + type + " " + uniform + ";\n";
+        if (declares(uniform) || !declared.insert(uniform).second) return;
+        uniforms += "uniform " + type + " " + uniform + ";\n";
     };
     // The audio uniforms a scene reads, unless it has a variable of that name
     for (const string &uniform : SynAudio::names()) {
@@ -312,51 +408,6 @@ bool SynScene::load(const string &folder) {
         declare("sampler2D", imageName);
     }
 
-    // script.js isn't run yet, but the uniforms it sets have to exist
-    string script = ofBufferFromFile(ofFilePath::join(folder, "script.js")).getText();
-    if (!script.empty()) {
-        std::map<string, int> found;
-        std::smatch match;
-        std::regex setUniform("setUniform\\s*\\(\\s*[\"'](\\w+)[\"']\\s*,([^;]*)");
-        for (auto it = std::sregex_iterator(script.begin(), script.end(), setUniform); it != std::sregex_iterator(); ++it) {
-            string args = (*it)[2];
-            int size;
-            size_t bracket = args.find_first_of("[{");
-            if (bracket != string::npos) {
-                size_t close = args.find_first_of("]}", bracket);
-                string inside = args.substr(bracket + 1, close == string::npos ? string::npos : close - bracket - 1);
-                size = ofSplitString(inside, ",", true, true).size();
-            } else {
-                size = ofSplitString(args, ",", true, true).size();
-            }
-            found[(*it)[1]] = ofClamp(size, 1, 4);
-        }
-        std::regex assigned("uniforms\\s*\\.\\s*(\\w+)\\s*=");
-        for (auto it = std::sregex_iterator(script.begin(), script.end(), assigned); it != std::sregex_iterator(); ++it) {
-            if (!found.count((*it)[1])) found[(*it)[1]] = 1;
-        }
-        // A script often sets a whole object, so its size shows in how the GLSL uses it:
-        // the furthest component it reads, or the vector it's assigned to
-        for (auto &entry : found) {
-            const string &uniform = entry.first;
-            std::regex swizzle("\\b" + uniform + "\\s*\\.\\s*([xyzwrgba]+)\\b");
-            for (auto it = std::sregex_iterator(source.begin(), source.end(), swizzle); it != std::sregex_iterator(); ++it) {
-                for (char component : string((*it)[1])) {
-                    int size = string("xrygzbwa").find(component) / 2 + 1;
-                    entry.second = std::max(entry.second, size);
-                }
-            }
-            std::regex assignedTo("vec([234])\\s+\\w+\\s*=\\s*" + uniform + "\\s*;");
-            std::smatch vec;
-            if (std::regex_search(source, vec, assignedTo)) entry.second = std::max(entry.second, std::stoi(vec[1]));
-        }
-        static const char *types[] = {"float", "vec2", "vec3", "vec4"};
-        for (auto &entry : found) {
-            vectorUniforms.push_back(entry);
-            declare(types[entry.second - 1], entry.first);
-        }
-    }
-
     // Song-change transitions: no song changes here yet, so each picks a value now
     for (auto &spec : json.value("HARD_TRANSITIONS", ofJson::array())) {
         string uniform = spec.value("UNIFORM", "");
@@ -377,6 +428,61 @@ bool SynScene::load(const string &folder) {
             if (!family[i].is_string()) continue;
             transitionValues[family[i].get<string>()] = i == on ? 1 : 0;
             declare("float", family[i].get<string>());
+        }
+    }
+
+    // script.js: run its top level, setup() and one update, to learn the uniforms it sets
+    // and their sizes; then, for any it only sets later, go by its text and the GLSL
+    string scriptSource = ofBufferFromFile(ofFilePath::join(folder, "script.js")).getText();
+    if (!scriptSource.empty()) {
+        script = std::make_unique<SynScript>(*this);
+        vector<float> silence(SynAudio::names().size(), 0);
+        feedScript(0, 0, 1920, 1080, silence);
+        if (!script->load(scriptSource, name)) ofLogWarning("SynScene") << name << ": " << script->getError();
+        script->update(1 / 60.0f);
+
+        std::map<string, int> found;
+        for (auto &entry : script->getUniforms()) found[entry.first] = entry.second.size;
+        std::regex setUniform("setUniform\\s*\\(\\s*[\"'](\\w+)[\"']\\s*,([^;]*)");
+        for (auto it = std::sregex_iterator(scriptSource.begin(), scriptSource.end(), setUniform); it != std::sregex_iterator(); ++it) {
+            string args = (*it)[2];
+            int size;
+            size_t bracket = args.find_first_of("[{");
+            if (bracket != string::npos) {
+                size_t close = args.find_first_of("]}", bracket);
+                string inside = args.substr(bracket + 1, close == string::npos ? string::npos : close - bracket - 1);
+                size = ofSplitString(inside, ",", true, true).size();
+            } else {
+                size = ofSplitString(args, ",", true, true).size();
+            }
+            found[(*it)[1]] = std::max(found[(*it)[1]], (int)ofClamp(size, 1, 4));
+        }
+        std::regex assigned("uniforms\\s*\\.\\s*(\\w+)\\s*=");
+        for (auto it = std::sregex_iterator(scriptSource.begin(), scriptSource.end(), assigned); it != std::sregex_iterator(); ++it) {
+            if (!found.count((*it)[1])) found[(*it)[1]] = 1;
+        }
+        // A script often sets a whole object, so its size shows in how the GLSL uses it:
+        // the furthest component it reads, or the vector it's assigned to
+        for (auto &entry : found) {
+            const string &uniform = entry.first;
+            std::regex swizzle("\\b" + uniform + "\\s*\\.\\s*([xyzwrgba]+)\\b");
+            for (auto it = std::sregex_iterator(source.begin(), source.end(), swizzle); it != std::sregex_iterator(); ++it) {
+                for (char component : string((*it)[1])) {
+                    int size = string("xrygzbwa").find(component) / 2 + 1;
+                    entry.second = std::max(entry.second, size);
+                }
+            }
+            std::regex assignedTo("vec([234])\\s+\\w+\\s*=\\s*" + uniform + "\\s*;");
+            std::smatch vec;
+            if (std::regex_search(source, vec, assignedTo)) entry.second = std::max(entry.second, std::stoi(vec[1]));
+        }
+        static const char *types[] = {"float", "vec2", "vec3", "vec4"};
+        for (auto &entry : found) {
+            // A name the GLSL has as a global of its own isn't the script's to set
+            std::regex global("^(float|int|bool|vec[234]|mat[234])\\s+" + entry.first + "\\b", std::regex::multiline);
+            if (std::regex_search(source, global)) continue;
+            vectorUniforms.push_back(entry);
+            declare(types[entry.second - 1], entry.first);
         }
     }
 
@@ -402,7 +508,7 @@ bool SynScene::load(const string &folder) {
     // with a script, anything left undeclared is taken to be one of its floats
     std::regex undeclared("undeclared identifier '(\\w+)'");
     std::smatch missing;
-    for (int tries = 0; tries < 16 && !script.empty() && std::regex_search(log, missing, undeclared); ++tries) {
+    for (int tries = 0; tries < 16 && script && std::regex_search(log, missing, undeclared); ++tries) {
         string uniform = missing[1];
         vectorUniforms.push_back({uniform, 1});
         fragment.insert(fragment.find(synLibrary), "uniform float " + uniform + ";\n");
@@ -450,6 +556,10 @@ void SynScene::render(ofFbo &target, float time, float timeDelta, int frameIndex
     updateControls(timeDelta);
     vector<float> audioValues = audio ? audio->values() : vector<float>();
     const vector<string> &audioNames = SynAudio::names();
+    if (script) {
+        feedScript(time, frameIndex, w, h, audioValues);
+        script->update(timeDelta);
+    }
 
     ofPushStyle();
     ofDisableAlphaBlending();
@@ -477,11 +587,17 @@ void SynScene::render(ofFbo &target, float time, float timeDelta, int frameIndex
             else if (c.type == "color") shader.setUniform3f(c.uniform, c.output.x, c.output.y, c.output.z);
             else shader.setUniform1f(c.uniform, c.output.x);
         }
+        // What the script set, at the size the shader declares (0 until it sets it)
         for (auto &entry : vectorUniforms) {
-            if (entry.second == 1) shader.setUniform1f(entry.first, 0);
-            else if (entry.second == 2) shader.setUniform2f(entry.first, 0, 0);
-            else if (entry.second == 3) shader.setUniform3f(entry.first, 0, 0, 0);
-            else shader.setUniform4f(entry.first, 0, 0, 0, 0);
+            float v[4] = {0, 0, 0, 0};
+            if (script) {
+                auto set = script->getUniforms().find(entry.first);
+                if (set != script->getUniforms().end()) std::copy(set->second.v, set->second.v + 4, v);
+            }
+            if (entry.second == 1) shader.setUniform1f(entry.first, v[0]);
+            else if (entry.second == 2) shader.setUniform2f(entry.first, v[0], v[1]);
+            else if (entry.second == 3) shader.setUniform3f(entry.first, v[0], v[1], v[2]);
+            else shader.setUniform4f(entry.first, v[0], v[1], v[2], v[3]);
         }
         for (auto &entry : transitionValues) shader.setUniform1f(entry.first, entry.second);
 
