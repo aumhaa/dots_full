@@ -173,6 +173,10 @@ void MidiController::newMidiMessage(ofxMidiMessage& msg) {
         shaderSteps--;
     } else if (msg.status == 144 && msg.channel == 1 && msg.pitch == DOTS_NOTE_NEXT_SHADER && msg.velocity > 0) {
         shaderSteps++;
+    } else if (msg.status == 144 && msg.channel == 1 && msg.pitch == DOTS_NOTE_PREV_IN_SET && msg.velocity > 0) {
+        setSteps--;
+    } else if (msg.status == 144 && msg.channel == 1 && msg.pitch == DOTS_NOTE_NEXT_IN_SET && msg.velocity > 0) {
+        setSteps++;
     } else if (msg.status == 176 && msg.channel == 1 && msg.control >= 0 && msg.control < 24) {
         sliders[msg.control] = (float)msg.value/127.0;
         stateManager->controllerToSceneParams(msg.control, sliders[msg.control]);

@@ -32,6 +32,7 @@ private:
     void drawPresets();
     void drawModulePresets(int module, const string &title);
     void drawFiles();
+    void drawSets();
     void refreshLists();
     void scanMilkdropPresets();
 
@@ -45,6 +46,11 @@ private:
     char newName[PRESET_N_MODULES][64];
     bool globalIncludesLights = false;
     float lastRefresh = -10;
+
+    // Sets
+    vector<string> setNames;
+    char newSetName[64] = "";
+    int globalToAdd = 0;
 
     // Files
     vector<string> milkdropPresets;   // relative to the presets folder

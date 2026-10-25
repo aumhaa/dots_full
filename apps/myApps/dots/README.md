@@ -75,6 +75,16 @@ Overwrite and Delete (which moves the file to a `deleted/` folder beside it).
 search), every shader (static ones marked), the light snapshots, and buttons
 that open each folder in Finder.
 
+### Sets
+
+A set is an ordered list of global presets, each with its own fade or the
+default preset fade, in `bin/data/sets/<name>.json`. The library's Sets tab
+opens, makes and deletes sets, adds global presets (or saves what's running
+as a new one and adds it), reorders and removes entries, and steps through:
+previous/next, or double-click an entry. Changes save at once. Over MIDI,
+notes 9 and 10 on channel 1 step to the previous/next entry; the `-` and `=`
+keys do the same.
+
 ### Pausing the engines
 
 "flames running" (Meta panel, CC 25), MilkDrop's "running" (CC 26) and the

@@ -785,6 +785,9 @@ void ofApp::update(){
         for (int steps = midi->shaderSteps.exchange(0); steps != 0; steps += (steps > 0 ? -1 : 1)) {
             if (steps > 0) shaderEngine->next(); else shaderEngine->previous();
         }
+        for (int steps = midi->setSteps.exchange(0); steps != 0; steps += (steps > 0 ? -1 : 1)) {
+            if (steps > 0) presets->nextInSet(); else presets->previousInSet();
+        }
     }
 
     // Each engine works only while it's running and something shows it: the
@@ -1069,6 +1072,10 @@ void ofApp::handleKey(int key) {
         gui->showViewer = !gui->showViewer;
     } else if (key == 'l') {
         gui->showLibrary = !gui->showLibrary;
+    } else if (key == '-') {
+        presets->previousInSet();
+    } else if (key == '=') {
+        presets->nextInSet();
     } else if (key == '<') {
         shaderEngine->previous();
     } else if (key == '>') {

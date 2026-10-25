@@ -262,3 +262,85 @@ void PresetManager::applyModule(int module, const ofJson &state, float fade) {
         }
     }
 }
+
+// Sets
+
+static string setsFolder() {
+    return ofToDataPath("sets", true);
+}
+
+vector<string> PresetManager::listSets() {
+    vector<string> names;
+    ofDirectory dir(setsFolder());
+    if (!dir.exists()) return names;
+    dir.allowExt("json");
+    dir.listDir();
+    for (auto &file : dir.getFiles()) names.push_back(file.getBaseName());
+    std::sort(names.begin(), names.end(), [](const string &a, const string &b) { return ofToLower(a) < ofToLower(b); });
+    return names;
+}
+
+bool PresetManager::openSet(const string &name) {
+    ofJson json = ofLoadJson(ofFilePath::join(setsFolder(), cleanName(name) + ".json"));
+    if (json.is_null()) return false;
+    setName = cleanName(name);
+    setEntries.clear();
+    for (auto &entry : json.value("entries", ofJson::array())) {
+        setEntries.push_back({entry.value("preset", ""), entry.value("fade", -1.0f)});
+    }
+    setPosition = -1;
+    return true;
+}
+
+bool PresetManager::newSet(const string &name) {
+    setName = cleanName(name);
+    setEntries.clear();
+    setPosition = -1;
+    return saveSet();
+}
+
+bool PresetManager::saveSet() {
+    if (setName.empty()) return false;
+    ofDirectory::createDirectory(setsFolder(), false, true);
+    ofJson json;
+    json["format"] = PRESET_FORMAT;
+    json["entries"] = ofJson::array();
+    for (const SetEntry &entry : setEntries) {
+        json["entries"].push_back({{"preset", entry.preset}, {"fade", entry.fade}});
+    }
+    return ofSavePrettyJson(ofFilePath::join(setsFolder(), setName + ".json"), json);
+}
+
+bool PresetManager::removeSet(const string &name) {
+    string from = ofFilePath::join(setsFolder(), cleanName(name) + ".json");
+    if (!ofFile::doesFileExist(from, false)) return false;
+    string deleted = ofFilePath::join(setsFolder(), "deleted");
+    ofDirectory::createDirectory(deleted, false, true);
+    if (cleanName(name) == setName) {
+        setName.clear();
+        setEntries.clear();
+        setPosition = -1;
+    }
+    return ofFile::moveFromTo(from, ofFilePath::join(deleted, cleanName(name) + "-" + ofGetTimestampString("%Y%m%d-%H%M%S") + ".json"), false, false);
+}
+
+void PresetManager::goTo(int position) {
+    if (position < 0 || position >= (int)setEntries.size()) return;
+    const SetEntry &entry = setEntries[position];
+    ofJson state = ofLoadJson(path(PRESET_GLOBAL, entry.preset));
+    if (state.is_null() || state.empty()) {
+        ofLogWarning("PresetManager") << "Set " << setName << ": no global preset " << entry.preset;
+        return;
+    }
+    setPosition = position;
+    apply(PRESET_GLOBAL, state, entry.fade >= 0 ? entry.fade : app.gui->presetFadeSeconds.get());
+    ofLogNotice("PresetManager") << "Set " << setName << " " << position + 1 << "/" << setEntries.size() << ": " << entry.preset;
+}
+
+void PresetManager::nextInSet() {
+    if (!setEntries.empty()) goTo(std::min(setPosition + 1, (int)setEntries.size() - 1));
+}
+
+void PresetManager::previousInSet() {
+    if (!setEntries.empty()) goTo(std::max(setPosition - 1, 0));
+}

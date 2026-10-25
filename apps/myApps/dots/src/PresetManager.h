@@ -46,6 +46,25 @@ public:
     // Letters, digits, space, - and _; anything else becomes _
     static string cleanName(const string &name);
 
+    // Sets: ordered lists of global presets (bin/data/sets/<name>.json),
+    // stepped through with fades. Changes to the current set save at once.
+    struct SetEntry {
+        string preset;      // a global preset's name
+        float fade = -1;    // seconds; -1 uses the GUI's preset fade
+    };
+    vector<string> listSets();
+    bool openSet(const string &name);     // becomes the current set, nothing recalled yet
+    bool newSet(const string &name);
+    bool removeSet(const string &name);   // into sets/deleted/
+    bool saveSet();
+    void goTo(int position);              // recalls that entry over its fade
+    void nextInSet();
+    void previousInSet();
+
+    string setName;
+    vector<SetEntry> setEntries;
+    int setPosition = -1;
+
 private:
     string path(int module, const string &name);
     void applyModule(int module, const ofJson &state, float fadeSeconds);

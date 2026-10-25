@@ -32,6 +32,8 @@
 #define DOTS_CC_LOCKS 72
 #define DOTS_NOTE_PREV_SHADER 7
 #define DOTS_NOTE_NEXT_SHADER 8
+#define DOTS_NOTE_PREV_IN_SET 9     // the current set's previous / next global preset
+#define DOTS_NOTE_NEXT_IN_SET 10
 
 // Spotlights: ambient, then 10 CCs per light from DOTS_CC_LIGHTS (on, mode,
 // intensity, hue, saturation, x, y, size, focus, frost), all channel 1
@@ -76,6 +78,7 @@ public:
     // MilkDrop preset changes asked for over MIDI (+ next, - previous); ofApp takes them each frame
     std::atomic<int> milkdropPresetSteps{0};
     std::atomic<int> shaderSteps{0};
+    std::atomic<int> setSteps{0};
 
     // State manager
     shared_ptr<StateManager> stateManager;

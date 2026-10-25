@@ -68,6 +68,7 @@ void LibraryApp::refreshLists() {
     for (int m = 0; m < PRESET_N_MODULES; ++m) {
         presetNames[m] = app->presets->list(m);
     }
+    setNames = app->presets->listSets();
     lightSnapshots.clear();
     ofDirectory dir(ofToDataPath("lights", true));
     if (dir.exists()) {
@@ -90,6 +91,10 @@ void LibraryApp::draw() {
     if (ImGui::BeginTabBar("library")) {
         if (ImGui::BeginTabItem("Presets")) {
             drawPresets();
+            ImGui::EndTabItem();
+        }
+        if (ImGui::BeginTabItem("Sets")) {
+            drawSets();
             ImGui::EndTabItem();
         }
         if (ImGui::BeginTabItem("Files")) {
@@ -163,6 +168,128 @@ void LibraryApp::drawModulePresets(int module, const string &title) {
         }
     }
     ImGui::PopID();
+}
+
+void LibraryApp::drawSets() {
+    PresetManager &pm = *app->presets;
+
+    // Which set
+    ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.6f);
+    if (ImGui::BeginCombo("set", pm.setName.empty() ? "(none open)" : pm.setName.c_str())) {
+        for (const string &name : setNames) {
+            if (ImGui::Selectable(name.c_str(), name == pm.setName)) pm.openSet(name);
+        }
+        ImGui::EndCombo();
+    }
+    ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.6f);
+    ImGui::InputTextWithHint("##newset", "new set name", newSetName, sizeof(newSetName));
+    ImGui::SameLine();
+    if (ImGui::Button("New set")) {
+        pm.newSet(strlen(newSetName) ? string(newSetName) : "set " + ofGetTimestampString("%Y-%m-%d %H-%M"));
+        newSetName[0] = 0;
+        lastRefresh = -10;
+    }
+    if (pm.setName.empty()) {
+        ImGui::TextDisabled("Open a set or make a new one.");
+        return;
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Delete set")) {
+        pm.removeSet(pm.setName);
+        lastRefresh = -10;
+        return;
+    }
+    ImGui::Separator();
+
+    // Stepping through it (also MIDI notes 9 and 10, and the - and = keys)
+    if (ImGui::Button("<< previous")) app->post([this]() { app->presets->previousInSet(); });
+    ImGui::SameLine();
+    if (ImGui::Button("next >>")) app->post([this]() { app->presets->nextInSet(); });
+    ImGui::SameLine();
+    if (pm.setPosition >= 0 && pm.setPosition < (int)pm.setEntries.size()) {
+        ImGui::Text("%d/%d  %s", pm.setPosition + 1, (int)pm.setEntries.size(), pm.setEntries[pm.setPosition].preset.c_str());
+    } else {
+        ImGui::TextDisabled("not started");
+    }
+
+    // The entries: double-click to go there; a fade of "default" uses the preset fade
+    bool changed = false;
+    int moveUp = -1, moveDown = -1, removeAt = -1;
+    if (ImGui::BeginTable("entries", 4, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerH)) {
+        ImGui::TableSetupColumn("#", ImGuiTableColumnFlags_WidthFixed, 24);
+        ImGui::TableSetupColumn("global preset", ImGuiTableColumnFlags_WidthStretch);
+        ImGui::TableSetupColumn("fade", ImGuiTableColumnFlags_WidthFixed, 80);
+        ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 70);
+        ImGui::TableHeadersRow();
+        for (int i = 0; i < (int)pm.setEntries.size(); ++i) {
+            PresetManager::SetEntry &entry = pm.setEntries[i];
+            ImGui::PushID(i);
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+            ImGui::Text("%d", i + 1);
+            ImGui::TableNextColumn();
+            if (ImGui::Selectable(entry.preset.c_str(), i == pm.setPosition, ImGuiSelectableFlags_AllowDoubleClick)
+                && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
+                app->post([this, i]() { app->presets->goTo(i); });
+            }
+            ImGui::TableNextColumn();
+            ImGui::SetNextItemWidth(-FLT_MIN);
+            changed |= ImGui::DragFloat("##fade", &entry.fade, 0.05f, -1, 30, entry.fade < 0 ? "default" : "%.1f s");
+            ImGui::TableNextColumn();
+            if (ImGui::ArrowButton("##up", ImGuiDir_Up)) moveUp = i;
+            ImGui::SameLine(0, 2);
+            if (ImGui::ArrowButton("##down", ImGuiDir_Down)) moveDown = i;
+            ImGui::SameLine(0, 2);
+            if (ImGui::SmallButton("x")) removeAt = i;
+            ImGui::PopID();
+        }
+        ImGui::EndTable();
+    }
+    auto &entries = pm.setEntries;
+    if (moveUp > 0) { std::swap(entries[moveUp], entries[moveUp - 1]); changed = true; }
+    if (moveDown >= 0 && moveDown + 1 < (int)entries.size()) { std::swap(entries[moveDown], entries[moveDown + 1]); changed = true; }
+    if (removeAt >= 0) {
+        entries.erase(entries.begin() + removeAt);
+        if (pm.setPosition >= (int)entries.size()) pm.setPosition = (int)entries.size() - 1;
+        changed = true;
+    }
+
+    // Adding: an existing global preset, or what's running now as a new one
+    vector<string> &globals = presetNames[PRESET_GLOBAL];
+    if (!globals.empty()) {
+        globalToAdd = ofClamp(globalToAdd, 0, (int)globals.size() - 1);
+        ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.6f);
+        if (ImGui::BeginCombo("##add", globals[globalToAdd].c_str())) {
+            for (int i = 0; i < (int)globals.size(); ++i) {
+                if (ImGui::Selectable(globals[i].c_str(), i == globalToAdd)) globalToAdd = i;
+            }
+            ImGui::EndCombo();
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Add")) {
+            entries.push_back({globals[globalToAdd], -1});
+            changed = true;
+        }
+    }
+    if (ImGui::Button("Add what's running now")) {
+        // Saved as a new global preset named after the set, then added
+        string name;
+        for (int n = (int)entries.size() + 1; ; ++n) {
+            name = pm.setName + " " + ofToString(n, 2, '0');
+            if (std::find(globals.begin(), globals.end(), name) == globals.end()) break;
+        }
+        bool withLights = globalIncludesLights;
+        app->post([this, name, withLights]() {
+            app->presets->save(PRESET_GLOBAL, name, withLights);
+            app->presets->setEntries.push_back({name, -1});
+            app->presets->saveSet();
+        });
+        lastRefresh = -10;
+    }
+    ImGui::SameLine();
+    ImGui::Checkbox("with lights", &globalIncludesLights);
+
+    if (changed) pm.saveSet();
 }
 
 void LibraryApp::drawFiles() {
