@@ -22,7 +22,14 @@
 //                              (11, 32), lights A-D on/off (16-19), flames,
 //                              MilkDrop and shader on/off (12-14)
 //    buttons 92-99             previous/next track, scene, MilkDrop, shader
-//    right strip 40/41         previous/next in the set
+//    right strip 41            Modul8's mode: the dials and the two rows of
+//                              buttons above the grid go to Modul8's modGrid
+//                              module (modul8/modGrid.m8m) over the "dots
+//                              modGrid" ports, as a Twister's knobs and buttons;
+//                              Modul8's values and colours come back, the names
+//                              from bin/data/modul8.json or the built-in ones
+//
+//  The ports chosen in the library's MIDI tab are kept in bin/data/midi.json.
 //
 //  Main controls are on channel 15 and the grid on 13 and 14 (0-based). Colours
 //  are modGrid palette numbers, sent as the velocity of a note back on the
@@ -50,6 +57,19 @@ public:
     bool isConnected() const { return connected; }
     const string &getPortName() const { return portName; }
 
+    // The iPad's Control port ("" for the first modGrid one, a real iPad before the Simulator) and the
+    // link to Modul8 ("" for dots's own virtual "dots modGrid" pair, else a pair such as an IAC bus);
+    // each is the in port's name, its out port found by name
+    const string &getSurfaceChoice() const { return surfaceChoice; }
+    const string &getLinkChoice() const { return linkChoice; }
+    void setSurfacePort(const string &name);
+    void setLinkPort(const string &name);
+    bool isLinked() const { return linked; }
+    string getLinkName() const;
+    // The system's ports, looked at every few seconds
+    const vector<string> &inPorts() const { return portsIn; }
+    string pairedOut(const string &inName) const;   // "<name> In" (the modGrid Bridge's), else the same name
+
     void newMidiMessage(ofxMidiMessage &message) override;
 
 private:
@@ -57,7 +77,11 @@ private:
 
     void connect();
     void disconnect();
+    void connectLink();
+    void disconnectLink();
+    void savePorts();
     void handle(const ofxMidiMessage &message);
+    void handleLink(const ofxMidiMessage &message);
     void press(int note);
     void pressPad(int row, int column);
     void refresh();                       // forget what was sent, so everything goes again
@@ -92,10 +116,23 @@ private:
     float lastScan = -10, lastSend = 0;
 
     std::mutex mutex;
-    vector<ofxMidiMessage> received;   // from the MIDI thread, for update()
+    vector<ofxMidiMessage> received, receivedFromLink;   // from the MIDI threads, for update()
 
-    enum { N_MODES = 5 };
-    int mode = 0, browse = BROWSE_SCENES;
+    // The link to Modul8, and what it last said of each dial and button
+    struct LinkListener : public ofxMidiListener {
+        ModGridSurface *owner = nullptr;
+        void newMidiMessage(ofxMidiMessage &message) override;
+    } link;
+    ofxMidiIn linkIn;
+    ofxMidiOut linkOut;
+    bool linked = false;
+    string surfaceChoice, linkChoice;
+    vector<string> portsIn, portsOut;
+    const string PORTS_FILE = "midi.json";
+    struct Modul8Control { string name; int value = 0; };   // a dial's 0-127, a button's Twister colour
+    Modul8Control modul8Dials[16], modul8Buttons[16];
+
+    int mode = 0, gridMode = 0, browse = BROWSE_SCENES;   // gridMode: the mode whose list the grid shows
     bool mixerShown = false;           // the mixer's dials, over the mode's
     int browsePage[N_BROWSE] = {0, 0, 0, 0};
     std::map<string, int> pageInGroup;   // group -> the page it's on

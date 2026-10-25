@@ -105,6 +105,10 @@ void LibraryApp::draw() {
             drawFiles();
             ImGui::EndTabItem();
         }
+        if (ImGui::BeginTabItem("MIDI")) {
+            drawMidi();
+            ImGui::EndTabItem();
+        }
         ImGui::EndTabBar();
     }
     ImGui::End();
@@ -452,6 +456,46 @@ const ofTexture *LibraryApp::thumbnail(const string &file) {
         found = thumbnails.find(file);
     }
     return found->second.isAllocated() ? &found->second : nullptr;
+}
+
+// The ports the modGrid surface uses: the iPad's, and the link to Modul8
+void LibraryApp::drawMidi() {
+    ModGridSurface &modgrid = app->modgrid;
+    // Only ports with an out port to answer on can be picked
+    vector<string> pairs;
+    for (const string &name : modgrid.inPorts()) {
+        if (!modgrid.pairedOut(name).empty()) pairs.push_back(name);
+    }
+
+    ImGui::SeparatorText("modGrid iPad");
+    ImGui::Text("%s", !app->gui->modgridEnabled ? "off (Meta panel: modGrid)"
+                      : modgrid.isConnected() ? ("connected to " + modgrid.getPortName()).c_str() : "looking for the port");
+    const string &surface = modgrid.getSurfaceChoice();
+    if (ImGui::BeginCombo("port##modgrid", surface.empty() ? "first modGrid port (an iPad first)" : surface.c_str())) {
+        if (ImGui::Selectable("first modGrid port (an iPad first)", surface.empty())) modgrid.setSurfacePort("");
+        for (const string &name : pairs) {
+            if (ImGui::Selectable(name.c_str(), name == surface)) modgrid.setSurfacePort(name);
+        }
+        ImGui::EndCombo();
+    }
+
+    ImGui::SeparatorText("Modul8 link");
+    ImGui::TextWrapped("Modul8's mode on the iPad passes the dials and the two rows of buttons above the grid to "
+                       "Modul8's modGrid module over this port pair; pick the same one in the module.");
+    ImGui::Text("%s", modgrid.isLinked() ? ("open: " + modgrid.getLinkName()).c_str() : "closed");
+    const string &link = modgrid.getLinkChoice();
+    if (ImGui::BeginCombo("port##modul8", link.empty() ? "dots modGrid (dots's own)" : link.c_str())) {
+        if (ImGui::Selectable("dots modGrid (dots's own)", link.empty())) modgrid.setLinkPort("");
+        for (const string &name : pairs) {
+            if (name.find("modGrid") != string::npos || name.find("dots") == 0) continue;   // the iPad's, dots's own
+            if (ImGui::Selectable(name.c_str(), name == link)) modgrid.setLinkPort(name);
+        }
+        ImGui::EndCombo();
+    }
+
+    ImGui::SeparatorText("dots's own ports");
+    ImGui::TextWrapped("DotsInput and DotsOutput (the Twister module's dots mode, scene parameters on channel 1) "
+                       "are always open.");
 }
 
 void LibraryApp::keyPressed(int key) {

@@ -32,6 +32,7 @@ private:
     void drawPresets();
     void drawModulePresets(int module, const string &title);
     void drawFiles();
+    void drawMidi();
     void drawSets();
     void refreshLists();
     void scanMilkdropPresets();

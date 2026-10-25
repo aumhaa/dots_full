@@ -18,7 +18,7 @@ static const SectionColor sectionColors[] = {
     {"Wander", 87, 90},         {"Audio Analysis", 72, 80}, {"Drawing", 71, 85},   {"Speed", 74, 84},
     {"Dots", 75, 81},           {"Lines", 76, 79},          {"Audio Effects", 13, 99},
     {"MilkDrop", 16, 83},       {"Lights", 26, 118},        {"Shader", 86, 82},    {"Mixer", 14, 96},
-    {"Sets", 94, 89},           {"Scenes", 71, 85},
+    {"Sets", 94, 89},           {"Scenes", 71, 85},         {"Modul8", 22, 114},
 };
 static const int COLOR_OFF = 0, COLOR_WHITE = 14;
 
@@ -41,26 +41,53 @@ static const SurfaceButton buttons[] = {
     {12, "flames", "Drawing"},    {13, "MilkDrop", "MilkDrop"}, {14, "shader", "Shader"},
     // Right column: the modes, through the set, and the arrows (up/down the dial pages, left/right the grid's)
     {33, "flames", "Drawing"},    {34, "milk", "MilkDrop"},     {35, "shader", "Shader"},    {36, "lights", "Lights"},
-    {37, "sets", "Sets"},
-    {40, "set prev", "Sets"},     {41, "set next", "Sets"},
+    {37, "sets", "Sets"},         {41, "modul8", "Modul8"},
     {70, "^", "Mixer"},           {73, "v", "Mixer"},           {71, "<", "Mixer"},          {72, ">", "Mixer"},
 };
-static const int MIXER_NOTE = 15, FIRST_MODE_NOTE = 33, UP_NOTE = 70, LEFT_NOTE = 71, RIGHT_NOTE = 72, DOWN_NOTE = 73;
+static const int MIXER_NOTE = 15, FIRST_MODE_NOTE = 33, MODUL8_NOTE = 41;
+static const int UP_NOTE = 70, LEFT_NOTE = 71, RIGHT_NOTE = 72, DOWN_NOTE = 73;
 // Left column: the engine on each side of the mixer (a press steps it), and the crossfader dial
 static const int ENGINE_A_NOTE = 11, ENGINE_B_NOTE = 32, CROSSFADE_CC = 17, SPARE_CC = 16;
-// Above the grid: the dial page (over the last key) and the grid's page (the last key); in lights
-// mode the first four keys pick the light the grid moves
-static const int DIAL_PAGE_NOTE = 107, GRID_PAGE_NOTE = 115, FIRST_LIGHT_KEY = 108;
-// Shown blank (Live's labels would otherwise stay on them); the light keys too, outside lights mode
-static const int BLANK_NOTES[] = {100, 101, 102, 103, 104, 105, 106, 112, 113, 114};
+// The two rows above the grid (100-115): Modul8's 16 buttons in its mode. Otherwise the dial page
+// (over the last key) and the grid's page (the last key); in lights mode the first four keys pick the
+// light the grid moves, in sets mode the first two step through the set; the rest blank
+static const int FIRST_ROW_NOTE = 100, DIAL_PAGE_NOTE = 107, GRID_PAGE_NOTE = 115, FIRST_KEY = 108;
+// Shown blank: Live's labels would otherwise stay on it
+static const int BLANK_NOTES[] = {40};
 static const char *engineNames[] = {"flames", "MilkDrop", "shader"};
 static const char *engineSections[] = {"Drawing", "MilkDrop", "Shader"};
 // Each mode: its dial pages, what its grid browses (-1: the grid places the selected light), its colour
 struct SurfaceMode { const char *group, *name, *section; int browse; };
+// Modul8's own (the last) has no dial pages or list: its dials and buttons go to Modul8, and the grid
+// keeps the mode before it
 static const SurfaceMode modes[] = {
     {"flames", "scene", "Drawing", 3},   {"milk", "milk", "MilkDrop", 2},  {"shader", "shader", "Shader", 1},
-    {"lights", "light", "Lights", -1},   {"sets", "sets", "Sets", 0},
+    {"lights", "light", "Lights", -1},   {"sets", "sets", "Sets", 0},      {"modul8", "modul8", "Modul8", -1},
 };
+static const int MODE_LIGHTS = 3, MODE_SETS = 4, MODE_MODUL8 = 5;
+
+// The link to Modul8 (its modGrid module): dials as CC 0-15 on channel 1 and buttons as CC 0-15 on
+// channel 2 (127 pressed, 0 released), as a Midi Fighter Twister sends them. Modul8 answers with dial
+// values on channel 1 and button colours on channel 2 (Twister colour values, 0 off); CC 127 on
+// channel 1 asks it for everything.
+static const string LINK_VIRTUAL_NAME = "dots modGrid";
+static const int LINK_DIAL_CHANNEL = 1, LINK_BUTTON_CHANNEL = 2, LINK_REFRESH_CC = 127;
+// A Twister colour value 1-127 is a hue, blue at 0 round through green, yellow and red to blue at 127;
+// these are the brightest modGrid palette colours nearest each 15 degrees of hue
+static const int hueColors[24] = {127, 16, 16, 94, 88, 5, 5, 6, 6, 6, 7, 7, 78, 72, 76, 77, 77, 87, 87, 73, 86, 27, 27, 74};
+static int twisterColor(int value) {
+    if (value <= 0) return COLOR_OFF;
+    float hue = std::fmod(240 - value * 360.0f / 127 + 720, 360);
+    return hueColors[(int)std::round(hue / 15) % 24];
+}
+// What the modGrid module does with each dial and button, for their names on the iPad; bin/data/modul8.json
+// ({"dials": [16 names], "buttons": [16 names]}) replaces them when the module changes
+static const char *modul8DialNames[16] = {
+    "alpha 1", "red", "green", "blue", "alpha 2", "saturation", "lightness", "contrast",
+    "alpha 3", "scale", "speed", "transition", "alpha 4", "", "", "crossfader"};
+static const char *modul8ButtonNames[16] = {
+    "layer 1", "red add", "green add", "blue add", "layer 2", "sat on", "light on", "contr on",
+    "layer 3", "", "", "", "layer 4", "invert", "flash", "layers 6-9"};
 // A pad shows its item's name, wrapped onto lines; this many letters at most
 static const int PAD_TEXT_LENGTH = 32;
 
@@ -91,6 +118,25 @@ void ModGridSurface::setup(ofApp *dots) {
     app = dots;
     msgid = ofRandom(128);   // a fresh start never reuses the last session's ids
     pages.setup(app);
+    link.owner = this;
+
+    // The ports chosen in the library; DOTS_MODGRID_PORT=text picks the iPad's until one is chosen
+    // (a missing file loads as null)
+    ofJson ports = ofFile::doesFileExist(PORTS_FILE) ? ofLoadJson(PORTS_FILE) : ofJson::object();
+    const char *wanted = getenv("DOTS_MODGRID_PORT");
+    surfaceChoice = ports.is_object() ? ports.value("modgrid", wanted ? string(wanted) : "") : "";
+    linkChoice = ports.is_object() ? ports.value("modul8", "") : "";
+
+    ofJson names = ofFile::doesFileExist("modul8.json") ? ofLoadJson("modul8.json") : ofJson::object();
+    for (int i = 0; i < 16; ++i) {
+        modul8Dials[i].name = modul8DialNames[i];
+        modul8Buttons[i].name = modul8ButtonNames[i];
+        for (auto [key, controls] : {std::pair<const char *, Modul8Control *>{"dials", modul8Dials}, {"buttons", modul8Buttons}}) {
+            if (names.is_object() && names.contains(key) && i < (int)names[key].size() && names[key][i].is_string()) {
+                controls[i].name = names[key][i].get<string>();
+            }
+        }
+    }
 }
 
 void ModGridSurface::newMidiMessage(ofxMidiMessage &message) {
@@ -98,40 +144,95 @@ void ModGridSurface::newMidiMessage(ofxMidiMessage &message) {
     received.push_back(message);
 }
 
-// The Control pair: the Bridge's "modGrid - <iPad> - Control" (a real iPad first), else the Simulator's
-// "modGrid Sim". DOTS_MODGRID_PORT=text picks the first whose name contains it.
+void ModGridSurface::LinkListener::newMidiMessage(ofxMidiMessage &message) {
+    std::lock_guard<std::mutex> lock(owner->mutex);
+    owner->receivedFromLink.push_back(message);
+}
+
+// The out port that goes with an in port: the modGrid Bridge's "<name> In", else one of the same name
+string ModGridSurface::pairedOut(const string &inName) const {
+    for (const string &o : portsOut) if (o == inName + " In") return o;
+    for (const string &o : portsOut) if (o == inName) return o;
+    return "";
+}
+
+void ModGridSurface::setSurfacePort(const string &name) {
+    surfaceChoice = name;
+    disconnect();
+    lastScan = -10;
+    savePorts();
+}
+
+void ModGridSurface::setLinkPort(const string &name) {
+    linkChoice = name;
+    disconnectLink();
+    lastScan = -10;
+    savePorts();
+}
+
+void ModGridSurface::savePorts() {
+    ofSavePrettyJson(PORTS_FILE, ofJson{{"modgrid", surfaceChoice}, {"modul8", linkChoice}});
+}
+
+// The Control pair: the one chosen, else the Bridge's "modGrid - <iPad> - Control" (a real iPad
+// first), else the Simulator's "modGrid Sim"
 void ModGridSurface::connect() {
-    vector<string> ins = in.getInPortList(), outs = out.getOutPortList();
-    const char *wanted = getenv("DOTS_MODGRID_PORT");
+    const vector<string> &ins = portsIn;
     int best = -1, bestScore = 0;
     for (int i = 0; i < (int)ins.size(); ++i) {
         const string &name = ins[i];
-        if (wanted ? name.find(wanted) == string::npos : name.find("modGrid") == string::npos) continue;
-        if (name.find("MPE") != string::npos) continue;
-        int score = name.find(" - Control") != string::npos ? 2 : name.find("modGrid Sim") != string::npos ? 1 : 0;
-        if (wanted) score = std::max(score, 1);
+        int score = 0;
+        if (!surfaceChoice.empty()) {
+            score = name == surfaceChoice ? 3 : name.find(surfaceChoice) != string::npos ? 1 : 0;   // a typed part of the name
+        } else if (name.find("modGrid") != string::npos && name.find("MPE") == string::npos) {
+            score = name.find(" - Control") != string::npos ? 2 : name.find("modGrid Sim") != string::npos ? 1 : 0;
+        }
         if (score > bestScore) {
             best = i;
             bestScore = score;
         }
     }
     if (best < 0) return;
-    string base = ins[best].substr(ins[best].find(wanted ? wanted : "modGrid"));
-    for (int o = 0; o < (int)outs.size(); ++o) {
-        if (outs[o].find(base + " In") == string::npos) continue;
-        in.ignoreTypes(false, true, true);   // SysEx in: the app's requests
-        if (!in.openPort(best) || !out.openPort(o)) {
-            disconnect();
-            return;
-        }
-        in.addListener(this);
-        connected = true;
-        portName = ins[best];
-        ofLogNotice("ModGridSurface") << "Connected to " << portName;
-        refresh();
-        sendCaps();   // one unsolicited CAPS, as a script does on start, so the app asks for everything
+    string outName = pairedOut(ins[best]);
+    if (outName.empty()) return;
+    in.ignoreTypes(false, true, true);   // SysEx in: the app's requests
+    if (!in.openPort(ins[best]) || !out.openPort(outName)) {
+        disconnect();
         return;
     }
+    in.addListener(this);
+    connected = true;
+    portName = ins[best];
+    ofLogNotice("ModGridSurface") << "Connected to " << portName;
+    refresh();
+    sendCaps();   // one unsolicited CAPS, as a script does on start, so the app asks for everything
+}
+
+// The link to Modul8: dots's own virtual "dots modGrid" pair, or a pair chosen in the library (an IAC bus)
+void ModGridSurface::connectLink() {
+    bool opened = linkChoice.empty()
+        ? linkIn.openVirtualPort(LINK_VIRTUAL_NAME) && linkOut.openVirtualPort(LINK_VIRTUAL_NAME)
+        : !pairedOut(linkChoice).empty() && linkIn.openPort(linkChoice) && linkOut.openPort(pairedOut(linkChoice));
+    if (!opened) {
+        disconnectLink();
+        return;
+    }
+    linkIn.addListener(&link);
+    linked = true;
+    ofLogNotice("ModGridSurface") << "Modul8 link on " << getLinkName();
+}
+
+void ModGridSurface::disconnectLink() {
+    if (linkIn.isOpen()) {
+        linkIn.removeListener(&link);
+        linkIn.closePort();
+    }
+    if (linkOut.isOpen()) linkOut.closePort();
+    linked = false;
+}
+
+string ModGridSurface::getLinkName() const {
+    return linkChoice.empty() ? LINK_VIRTUAL_NAME + " (dots's own)" : linkChoice;
 }
 
 void ModGridSurface::disconnect() {
@@ -146,28 +247,37 @@ void ModGridSurface::disconnect() {
 }
 
 void ModGridSurface::update(bool enabled) {
+    // Look at the ports every few seconds: for the library, and to notice the iPad's going (the Bridge
+    // restarting, the iPad leaving) or coming
+    float now = ofGetElapsedTimef();
+    bool scan = now - lastScan > 3;
+    if (scan) {
+        lastScan = now;
+        portsIn = in.getInPortList();
+        portsOut = out.getOutPortList();
+    }
     if (!enabled) {
         if (connected) disconnect();
+        if (linked) disconnectLink();
         return;
     }
-    // Look for the port every few seconds, and notice it going (the Bridge restarting, the iPad leaving)
-    float now = ofGetElapsedTimef();
-    if (now - lastScan > 3) {
-        lastScan = now;
+    if (scan) {
         if (!connected) {
             connect();
-        } else {
-            vector<string> ins = in.getInPortList();
-            if (std::find(ins.begin(), ins.end(), portName) == ins.end()) disconnect();
+        } else if (std::find(portsIn.begin(), portsIn.end(), portName) == portsIn.end()) {
+            disconnect();
         }
+        if (!linked) connectLink();
     }
-    if (!connected) return;
 
-    vector<ofxMidiMessage> messages;
+    vector<ofxMidiMessage> messages, fromLink;
     {
         std::lock_guard<std::mutex> lock(mutex);
         messages.swap(received);
+        fromLink.swap(receivedFromLink);
     }
+    for (const ofxMidiMessage &message : fromLink) handleLink(message);
+    if (!connected) return;
     for (const ofxMidiMessage &message : messages) handle(message);
 
     pages.update();   // the shader's pages follow the shader; groupPosition() keeps within them
@@ -191,7 +301,10 @@ void ModGridSurface::handle(const ofxMidiMessage &message) {
         return;
     }
     if (message.status == MIDI_CONTROL_CHANGE && message.channel == MAIN_CHANNEL) {
-        if (message.control < 16) {
+        if (message.control < 16 && mode == MODE_MODUL8) {
+            modul8Dials[message.control].value = message.value;
+            if (linked) linkOut.sendControlChange(LINK_DIAL_CHANNEL, message.control, message.value);
+        } else if (message.control < 16) {
             const vector<ControlEntry> &entries = pages.get()[currentPage()].entries;
             if (message.control < (int)entries.size()) entries[message.control].setNormalized(message.value / 127.0f);
         } else if (message.control == CROSSFADE_CC) {
@@ -199,7 +312,15 @@ void ModGridSurface::handle(const ofxMidiMessage &message) {
         }
         return;
     }
-    if (message.status == MIDI_NOTE_ON && message.velocity > 0) {
+    // Modul8's buttons go to it pressed and released (its toggles act on the release)
+    bool noteOn = message.status == MIDI_NOTE_ON && message.velocity > 0;
+    bool noteOff = message.status == MIDI_NOTE_OFF || (message.status == MIDI_NOTE_ON && message.velocity == 0);
+    if ((noteOn || noteOff) && message.channel == MAIN_CHANNEL && mode == MODE_MODUL8 &&
+        message.pitch >= FIRST_ROW_NOTE && message.pitch < FIRST_ROW_NOTE + 16) {
+        if (linked) linkOut.sendControlChange(LINK_BUTTON_CHANNEL, message.pitch - FIRST_ROW_NOTE, noteOn ? 127 : 0);
+        return;
+    }
+    if (noteOn) {
         if (message.channel == MAIN_CHANNEL) {
             press(message.pitch);
         } else if (message.channel == PAD_CHANNEL_LOW || message.channel == PAD_CHANNEL_HIGH) {
@@ -209,9 +330,16 @@ void ModGridSurface::handle(const ofxMidiMessage &message) {
     }
 }
 
+// Modul8 answering: dial values on channel 1, button colours on channel 2
+void ModGridSurface::handleLink(const ofxMidiMessage &message) {
+    if (message.status != MIDI_CONTROL_CHANGE || message.control >= 16) return;
+    if (message.channel == LINK_DIAL_CHANNEL) modul8Dials[message.control].value = message.value;
+    if (message.channel == LINK_BUTTON_CHANNEL) modul8Buttons[message.control].value = message.value;
+}
+
 // The dial pages on show: the mixer's while it's up, else the mode's
 string ModGridSurface::dialGroup() const {
-    return mixerShown ? "mixer" : modes[mode].group;
+    return mixerShown ? "mixer" : mode == MODE_MODUL8 ? "" : modes[mode].group;
 }
 
 vector<int> ModGridSurface::groupPages() const {
@@ -241,6 +369,12 @@ int ModGridSurface::browsePageCount() const {
 void ModGridSurface::selectMode(int which) {
     mode = which;
     mixerShown = false;
+    if (mode == MODE_MODUL8) {
+        // Modul8 sends everything again, for the dials and buttons it now has
+        if (linked) linkOut.sendControlChange(LINK_DIAL_CHANNEL, LINK_REFRESH_CC, 127);
+        return;
+    }
+    gridMode = mode;
     if (modes[mode].browse < 0) return;
     browse = modes[mode].browse;
     if (browse == BROWSE_MILKDROP && milkdropPresets.empty()) scanMilkdrop();
@@ -252,13 +386,22 @@ void ModGridSurface::selectMode(int which) {
 void ModGridSurface::press(int note) {
     GuiApp &gui = *app->gui;
     LightingLayer &lighting = *app->lighting;
-    bool lightsGrid = modes[mode].browse < 0;
-    if (note >= FIRST_MODE_NOTE && note < FIRST_MODE_NOTE + N_MODES) {
+    bool lightsGrid = modes[gridMode].browse < 0;
+    if (note >= FIRST_MODE_NOTE && note < FIRST_MODE_NOTE + MODE_MODUL8) {
         selectMode(note - FIRST_MODE_NOTE);
         return;
     }
-    if (lightsGrid && note >= FIRST_LIGHT_KEY && note < FIRST_LIGHT_KEY + LIGHTING_N_LIGHTS) {
-        lighting.selected = note - FIRST_LIGHT_KEY + 1;
+    if (note == MODUL8_NOTE) {
+        selectMode(MODE_MODUL8);
+        return;
+    }
+    if (mode == MODE_LIGHTS && note >= FIRST_KEY && note < FIRST_KEY + LIGHTING_N_LIGHTS) {
+        lighting.selected = note - FIRST_KEY + 1;
+        return;
+    }
+    if (mode == MODE_SETS && (note == FIRST_KEY || note == FIRST_KEY + 1)) {
+        if (note == FIRST_KEY) app->presets->previousInSet();
+        else app->presets->nextInSet();
         return;
     }
     switch (note) {
@@ -270,8 +413,6 @@ void ModGridSurface::press(int note) {
         case 97: app->projectM.nextPreset(); break;
         case 98: app->shaderEngine->previous(); break;
         case 99: app->shaderEngine->next(); break;
-        case 40: app->presets->previousInSet(); break;
-        case 41: app->presets->nextInSet(); break;
         case 12: gui.flamesRunning = !gui.flamesRunning; break;
         case 13: gui.milkdropRunning = !gui.milkdropRunning; break;
         case 14: gui.shaderRunning = !gui.shaderRunning; break;
@@ -293,7 +434,7 @@ void ModGridSurface::press(int note) {
 void ModGridSurface::pressPad(int row, int column) {
     if (row >= 8 || column >= 8) return;
     // Lights mode: the pad is where the selected light goes, the grid spanning the picture
-    if (modes[mode].browse < 0) {
+    if (modes[gridMode].browse < 0) {
         LightingLayer &lighting = *app->lighting;
         Light &light = lighting.lights[(int)ofClamp(lighting.selected - 1, 0, LIGHTING_N_LIGHTS - 1)];
         light.x = ofLerp(light.x.getMin(), light.x.getMax(), (column + 0.5f) / 8);
@@ -370,12 +511,22 @@ void ModGridSurface::refresh() {
 
 void ModGridSurface::sendFeedback() {
     const vector<ControlPage> &all = pages.get();
-    const ControlPage &current = all[currentPage()];
+    bool modul8 = mode == MODE_MODUL8 && !mixerShown;
+    vector<int> shownPages = groupPages();
+    int position = groupPosition(), positions = shownPages.size();
+    const ControlPage *current = shownPages.empty() ? nullptr : &all[shownPages[position]];
 
-    // The dials: this page's parameters
+    // The dials: this page's parameters, or Modul8's
     for (int cc = 0; cc < 16; ++cc) {
-        bool used = cc < (int)current.entries.size();
-        const ControlEntry *entry = used ? &current.entries[cc] : nullptr;
+        if (modul8) {
+            const Modul8Control &dial = modul8Dials[cc];
+            sendDial(cc, dial.value);
+            sendText(SYSEX_DIAL_NAME, MAIN_CHANNEL - 1, cc, dial.name);
+            sendText(SYSEX_DIAL_VALUE, MAIN_CHANNEL - 1, cc, dial.name.empty() ? "" : ofToString(dial.value / 127.0f, 2));
+            continue;
+        }
+        bool used = current && cc < (int)current->entries.size();
+        const ControlEntry *entry = used ? &current->entries[cc] : nullptr;
         sendDial(cc, used ? (int)std::round(entry->normalized() * 127) : 0);
         sendText(SYSEX_DIAL_NAME, MAIN_CHANNEL - 1, cc, used ? entry->label : "");
         sendText(SYSEX_DIAL_VALUE, MAIN_CHANNEL - 1, cc, used ? entry->valueText() : "");
@@ -390,12 +541,14 @@ void ModGridSurface::sendFeedback() {
     sendText(SYSEX_DIAL_NAME, MAIN_CHANNEL - 1, SPARE_CC, "");
     sendText(SYSEX_DIAL_VALUE, MAIN_CHANNEL - 1, SPARE_CC, "");
 
-    // The buttons: switches lit while on, the mode lit, the arrows and set buttons dim when they can't move
+    // The buttons: switches lit while on, the mode lit, the arrows dim when they can't move
     LightingLayer &lighting = *app->lighting;
     PresetManager &presets = *app->presets;
-    bool lightsGrid = modes[mode].browse < 0;
+    const SurfaceMode &grid = modes[gridMode];
+    bool lightsGrid = grid.browse < 0;
     int count = lightsGrid ? 0 : browseCount(), currentItem = lightsGrid ? -1 : browseCurrent();
-    int pageCount = lightsGrid ? 1 : browsePageCount(), position = groupPosition(), positions = groupPages().size();
+    int pageCount = lightsGrid ? 1 : browsePageCount();
+    const char *dialSection = current ? current->section.c_str() : modes[mode].section;
     for (const SurfaceButton &button : buttons) {
         bool lit = true;
         const char *section = button.section;
@@ -406,12 +559,11 @@ void ModGridSurface::sendFeedback() {
             case 16: case 17: case 18: case 19: lit = lighting.lights[button.note - 16].on; break;
             case MIXER_NOTE: lit = mixerShown; break;
             case 33: case 34: case 35: case 36: case 37: lit = mode == button.note - FIRST_MODE_NOTE; break;
-            case 40: lit = presets.setPosition > 0 && !presets.setEntries.empty(); break;
-            case 41: lit = presets.setPosition < (int)presets.setEntries.size() - 1; break;
-            case UP_NOTE: lit = position > 0; section = current.section.c_str(); break;
-            case DOWN_NOTE: lit = position < positions - 1; section = current.section.c_str(); break;
-            case LEFT_NOTE: lit = !lightsGrid && browsePage[browse] > 0; section = modes[mode].section; break;
-            case RIGHT_NOTE: lit = !lightsGrid && browsePage[browse] < pageCount - 1; section = modes[mode].section; break;
+            case MODUL8_NOTE: lit = mode == MODE_MODUL8; break;
+            case UP_NOTE: lit = position > 0; section = dialSection; break;
+            case DOWN_NOTE: lit = position < positions - 1; section = dialSection; break;
+            case LEFT_NOTE: lit = !lightsGrid && browsePage[browse] > 0; section = grid.section; break;
+            case RIGHT_NOTE: lit = !lightsGrid && browsePage[browse] < pageCount - 1; section = grid.section; break;
         }
         sendColor(MAIN_CHANNEL, button.note, sectionColor(section, lit));
         sendText(SYSEX_BUTTON_TEXT, MAIN_CHANNEL - 1, button.note, button.label);
@@ -431,22 +583,39 @@ void ModGridSurface::sendFeedback() {
         sendText(SYSEX_BUTTON_TEXT, MAIN_CHANNEL - 1, key, "");
     }
 
-    // Above the grid: the light keys in lights mode, then the dial page and the grid's page
+    // The two rows above the grid: Modul8's buttons in its mode; otherwise the mode's keys, then the
+    // dial page and the grid's page
     int selected = ofClamp(lighting.selected - 1, 0, LIGHTING_N_LIGHTS - 1);
-    for (int i = 0; i < LIGHTING_N_LIGHTS; ++i) {
-        sendColor(MAIN_CHANNEL, FIRST_LIGHT_KEY + i, lightsGrid ? sectionColor("Lights", i == selected) : COLOR_OFF);
-        sendText(SYSEX_BUTTON_TEXT, MAIN_CHANNEL - 1, FIRST_LIGHT_KEY + i, lightsGrid ? "move " + string(1, 'A' + i) : "");
+    for (int note = FIRST_ROW_NOTE; note < FIRST_ROW_NOTE + 16; ++note) {
+        int color = COLOR_OFF, key = note - FIRST_KEY;
+        string text;
+        if (mode == MODE_MODUL8) {
+            const Modul8Control &button = modul8Buttons[note - FIRST_ROW_NOTE];
+            color = button.name.empty() && !button.value ? COLOR_OFF : button.value ? twisterColor(button.value) : sectionColor("Modul8", false);
+            text = button.name;
+        } else if (note == DIAL_PAGE_NOTE && current) {
+            color = sectionColor(current->section, true);
+            text = all[shownPages.front()].name + " " + ofToString(position + 1) + "/" + ofToString(positions);
+        } else if (note == GRID_PAGE_NOTE) {
+            color = sectionColor(grid.section, true);
+            text = lightsGrid ? "light " + string(1, 'A' + selected)
+                              : string(grid.name) + " " + ofToString(browsePage[browse] + 1) + "/" + ofToString(pageCount);
+        } else if (mode == MODE_LIGHTS && key >= 0 && key < LIGHTING_N_LIGHTS) {
+            color = sectionColor("Lights", key == selected);
+            text = "move " + string(1, 'A' + key);
+        } else if (mode == MODE_SETS && (key == 0 || key == 1)) {
+            bool canMove = key == 0 ? presets.setPosition > 0 && !presets.setEntries.empty()
+                                    : presets.setPosition < (int)presets.setEntries.size() - 1;
+            color = sectionColor("Sets", canMove);
+            text = key == 0 ? "set prev" : "set next";
+        }
+        sendColor(MAIN_CHANNEL, note, color);
+        sendText(SYSEX_BUTTON_TEXT, MAIN_CHANNEL - 1, note, text);
     }
-    sendColor(MAIN_CHANNEL, DIAL_PAGE_NOTE, sectionColor(current.section, true));
-    sendText(SYSEX_BUTTON_TEXT, MAIN_CHANNEL - 1, DIAL_PAGE_NOTE,
-             all[groupPages().front()].name + " " + ofToString(position + 1) + "/" + ofToString(positions));
-    sendColor(MAIN_CHANNEL, GRID_PAGE_NOTE, sectionColor(modes[mode].section, true));
-    sendText(SYSEX_BUTTON_TEXT, MAIN_CHANNEL - 1, GRID_PAGE_NOTE,
-             lightsGrid ? "light " + string(1, 'A' + selected)
-                        : string(modes[mode].name) + " " + ofToString(browsePage[browse] + 1) + "/" + ofToString(pageCount));
 
     // The grid: in lights mode, where the lights are (the selected one white, the others lit while on);
-    // otherwise this page of the browse list, each pad with its item's name, the current item white
+    // otherwise this page of the browse list, each pad with its item's name, the current item white.
+    // Modul8's mode keeps the grid of the mode before it.
     int lightPads[LIGHTING_N_LIGHTS];
     for (int i = 0; i < LIGHTING_N_LIGHTS; ++i) {
         Light &light = lighting.lights[i];
@@ -471,7 +640,7 @@ void ModGridSurface::sendFeedback() {
             } else {
                 int item = browsePage[browse] * 64 + row * 8 + column;
                 if (item < count) {
-                    color = item == currentItem ? COLOR_WHITE : sectionColor(modes[mode].section, false);
+                    color = item == currentItem ? COLOR_WHITE : sectionColor(grid.section, false);
                     text = padName(browseName(item));
                 }
             }

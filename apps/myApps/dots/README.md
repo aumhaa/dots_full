@@ -195,7 +195,8 @@ modGrid Bridge's Control ports for the iPad (`modGrid - <iPad> - Control` and
 `... In`; the Simulator's `modGrid Sim` pair if no iPad is there), so **Live's
 ModGrid script must not be bound to the same port** while dots has it. The
 Bridge app has to be running; dots looks for the port every few seconds.
-`DOTS_MODGRID_PORT=<text>` picks a port by name.
+`DOTS_MODGRID_PORT=<text>` picks a port by name until one is chosen in the
+library's MIDI tab.
 
 - **Modes** (the right strip's top five buttons): flames, milk, shader, lights,
   sets. A mode puts its parameters on the 16 dials (names and values on the
@@ -213,7 +214,24 @@ Bridge app has to be running; dots looks for the port every few seconds.
   press steps it), lights A-D on/off, then flames, MilkDrop and shader on/off,
   lit while on.
 - **Buttons above the dials**: track, scene, MilkDrop and shader previous/next.
-  **Right column**: set previous and next, dim at either end.
+  In **sets** mode the first two keys step through the set, dim at either end.
+- **Modul8** (the right column's lower button) is a sixth mode: the 16 dials
+  and the two rows of buttons above the grid go to Modul8, while the left
+  column, the modes and the grid (kept from the mode before) stay with dots.
+  dots passes them on its own virtual `dots modGrid` ports, as a Midi Fighter
+  Twister's knobs (CC 0-15, channel 1) and buttons (CC 0-15, channel 2), and
+  shows what comes back: dial values, and button colours as Twister colour
+  values. Modul8 runs `modul8/modGrid.m8m` (copy it into
+  `/Applications/modul8v3/Modules`; pick `dots modGrid` in its list). Its
+  layout is the Twister module's Modul8 side: four layers' alpha and select,
+  colour, saturation/lightness/contrast, scale, speed, transition, crossfader,
+  invert and flash. Modul8 can't send the names, so dots holds them:
+  `bin/data/modul8.json` (`{"dials": [16 names], "buttons": [16 names]}`)
+  replaces the built-in ones when the module's layout changes.
+
+The library's **MIDI** tab picks the iPad's port (or the first modGrid port, an
+iPad before the Simulator) and the Modul8 link (dots's own ports, or a pair
+such as an IAC bus); the choices are kept in `bin/data/midi.json`.
 
 The MilkDrop page has projectM's own settings too (also in the MilkDrop panel):
 transition time, beat sensitivity, hard cuts on a loud beat with their
