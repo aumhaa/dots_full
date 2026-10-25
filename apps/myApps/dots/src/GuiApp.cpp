@@ -72,6 +72,7 @@ void GuiApp::setup() {
     metaParams.add(showLibrary.set("show library (l)", true));
     metaParams.add(flamesRunning.set("flames running", true));
     metaParams.add(maxFps.set("max fps", 30, 10, 60));
+    metaParams.add(modgridEnabled.set("modGrid", getenv("DOTS_MODGRID") != nullptr));
     metaGui.setup(metaParams);
 
     // MilkDrop

@@ -187,6 +187,32 @@ keeps rendering for the preview and Syphon. Show it with "show viewer (v)" in
 the Meta panel or the `v` key. Closing the control window quits dots. The
 output resolution follows the viewer window's size (1080x720 by default).
 
+### modGrid (the iPad app), without Live
+
+With "modGrid" on in the Meta panel, dots drives the modGrid iPad app itself,
+in place of Live's ModGrid script (`src/ModGridSurface.cpp`). It opens the
+modGrid Bridge's Control ports for the iPad (`modGrid - <iPad> - Control` and
+`... In`; the Simulator's `modGrid Sim` pair if no iPad is there), so **Live's
+ModGrid script must not be bound to the same port** while dots has it. The
+Bridge app has to be running; dots looks for the port every few seconds.
+`DOTS_MODGRID_PORT=<text>` picks a port by name.
+
+- **16 dials**: a page of dots's parameters, with their names and values on the
+  iPad. The **8 keys** pick the page: Flames, Flames 2 (motion and effect
+  sizes, the block locks), Mixer, MilkDrop, Shader and Shader 2 (the shader's
+  own inputs), Shader set (running, kinds, media, alpha), Lights.
+- **Buttons above the dials** (92-99): track, scene, MilkDrop and shader
+  previous/next. **Below** (100-107): set previous/next, then wander, flames,
+  MilkDrop, shader, lights on feed A and alpha out, lit while on. **Bottom row**
+  (108-115): what the grid browses (sets, shaders, MilkDrop, flames scenes),
+  its page back and forward, and engine A and B.
+- **The 8x8 grid** browses that list, 64 to a page, the current item white;
+  press a pad to load it. Pads can't show names, so the right strip shows the
+  list and page and the current item's name.
+
+The pages come from `src/ControlPages.cpp`, which is meant to grow into the
+parameter layer every UI shares.
+
 ### MIDI and the Twister
 
 dots opens two virtual MIDI ports. `DotsInput` takes CC 0-20 on channel 1

@@ -71,6 +71,7 @@ public:
     ShaderSource &getShader() { return *shader; }
     int getIndex() const { return index; }
     int getCount() const { return library.size(); }
+    string getName(int index) const;   // of the shader at that place in the list
     string getStatus() const;
 
     // Changes whenever a different shader (or reloaded one) is in, so the GUI can rebuild its panel

@@ -227,6 +227,14 @@ void ShaderEngine::checkForChanges() {
     }
 }
 
+string ShaderEngine::getName(int i) const {
+    if (i < 0 || i >= (int)library.size()) return "";
+    for (const Entry &entry : allShaders) {
+        if (entry.path == library[i]) return entry.name;
+    }
+    return ofFilePath::getBaseName(library[i]);
+}
+
 bool ShaderEngine::currentUsesMedia() const {
     string current = getCurrentPath();
     for (const Entry &entry : allShaders) {

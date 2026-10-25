@@ -10,6 +10,7 @@
 #include "LightingLayer.h"
 #include "ShaderEngine.h"
 #include "SynAudio.h"
+#include "ModGridSurface.h"
 #include "PresetManager.h"
 #include "Fader.h"
 #include <functional>
@@ -141,6 +142,7 @@ public:
     bool shaderAnimatedOnly = true;
     int shaderSources = 0;
     SynAudio synAudio;   // Synesthesia's audio uniforms, from the same input
+    ModGridSurface modgrid;   // the modGrid iPad app, in place of Live's ModGrid script
     ofFbo &engineFbo(int engine);
 
     // Preset fades: values glide (fader); what can't fade live fades out from a frozen frame

@@ -70,6 +70,7 @@ void ofApp::setup(){
         ofExit();
     }
     presets = std::make_unique<PresetManager>(*this);
+    modgrid.setup(this);
     shaderSyphonServer.setName("dots shader");
     projectM.setup(ofGetWidth(), ofGetHeight(), ofToDataPath("projectM", true));
 
@@ -813,6 +814,7 @@ void ofApp::update(){
             if (steps > 0) presets->nextInSet(); else presets->previousInSet();
         }
     }
+    modgrid.update(gui->modgridEnabled);
 
     // Each engine works only while it's running and something shows it: the
     // mixer (A below full crossfade, B above zero), the lights' feed B, or for
