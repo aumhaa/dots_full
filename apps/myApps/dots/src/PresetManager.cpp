@@ -14,6 +14,7 @@ string PresetManager::moduleName(int module) {
         case PRESET_FLAMES:   return "flames";
         case PRESET_MILKDROP: return "milkdrop";
         case PRESET_SHADER:   return "shader";
+        case PRESET_SHEEP:    return "sheep";
         case PRESET_LIGHTS:   return "lights";
     }
     return "unknown";
@@ -120,6 +121,12 @@ ofJson PresetManager::capture(int module, bool globalIncludesLights) {
             break;
         }
 
+        case PRESET_SHEEP:
+            // The settings, the sheep's number among them, and whether it's running
+            ofSerialize(state, app.sheepEngine->parameters);
+            state["running"] = gui.sheepRunning.get();
+            break;
+
         case PRESET_LIGHTS: {
             LightingLayer &lighting = *app.lighting;
             ofSerialize(state, lighting.ambient);
@@ -136,6 +143,7 @@ ofJson PresetManager::capture(int module, bool globalIncludesLights) {
             state["flames"] = capture(PRESET_FLAMES);
             state["milkdrop"] = capture(PRESET_MILKDROP);
             state["shader"] = capture(PRESET_SHADER);
+            state["sheep"] = capture(PRESET_SHEEP);
             if (globalIncludesLights) state["lights"] = capture(PRESET_LIGHTS);
             break;
     }
@@ -229,6 +237,25 @@ void PresetManager::applyModule(int module, const ofJson &state, float fade) {
             break;
         }
 
+        case PRESET_SHEEP: {
+            // The settings glide; the sheep itself doesn't (a fade would run through every sheep
+            // between), it morphs in over the fade
+            SheepEngine &sheep = *app.sheepEngine;
+            string group = sheep.parameters.getEscapedName(), index = sheep.sheep.getEscapedName();
+            ofJson settings = state;
+            if (settings.contains(group)) settings[group].erase(index);
+            fader.apply(settings, sheep.parameters);
+            if (state.contains(group) && state[group].contains(index)) {
+                int saved = ofToInt(state[group][index].get<string>());
+                if (saved != sheep.getIndex()) {
+                    if (fade > 0) sheep.select(saved, fade);
+                    else sheep.select(saved);
+                }
+            }
+            if (state.contains("running")) gui.sheepRunning = state["running"].get<bool>();
+            break;
+        }
+
         case PRESET_LIGHTS: {
             LightingLayer &lighting = *app.lighting;
             fader.apply(state, lighting.ambient);
@@ -270,6 +297,7 @@ void PresetManager::applyModule(int module, const ofJson &state, float fade) {
             if (state.contains("flames")) applyModule(PRESET_FLAMES, state["flames"], fade);
             if (state.contains("milkdrop")) applyModule(PRESET_MILKDROP, state["milkdrop"], fade);
             if (state.contains("shader")) applyModule(PRESET_SHADER, state["shader"], fade);
+            if (state.contains("sheep")) applyModule(PRESET_SHEEP, state["sheep"], fade);
             if (state.contains("lights")) applyModule(PRESET_LIGHTS, state["lights"], fade);
             break;
         }

@@ -67,6 +67,11 @@ void SheepEngine::select(int index) {
     if (count > 0) sheep = (index % count + count) % count;
 }
 
+void SheepEngine::select(int index, float morphOverride) {
+    nextMorph = morphOverride;
+    select(index);
+}
+
 string SheepEngine::getStatus() const {
     if (count == 0) return "no genebank";
     string status = ofToString(sheep + 1) + "/" + ofToString(count) + " " + getName(sheep);
@@ -109,7 +114,9 @@ void SheepEngine::render() {
     }
     // A new sheep morphs in (or cuts, with no morph time)
     if (index != shownSheep) {
-        if (morphSeconds > 0) {
+        morphDuration = nextMorph >= 0 ? nextMorph : morphSeconds.get();
+        nextMorph = -1;
+        if (morphDuration > 0) {
             morphFrom = shownSheep;
             morphTime = 0;
         } else {
@@ -143,7 +150,7 @@ void SheepEngine::render() {
     float morph = 1;
     if (morphFrom >= 0) {
         morphTime += dt;
-        morph = ofClamp(morphTime / std::max(0.01f, morphSeconds.get()), 0, 1);
+        morph = ofClamp(morphTime / std::max(0.01f, morphDuration), 0, 1);
     }
 
     build(360.0f * phase + 45.0f * audioTwist * bass, morph);

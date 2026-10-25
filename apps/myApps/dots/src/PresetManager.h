@@ -2,7 +2,7 @@
 //  PresetManager.h
 //  dots
 //
-//  Presets for each module (flames, MilkDrop, shader, lights) and global ones
+//  Presets for each module (flames, MilkDrop, shader, sheep, lights) and global ones
 //  (the mixer plus every module), as JSON in bin/data/presets/<module>/<name>.json.
 //  A global preset holds each module's state itself, so it doesn't depend on
 //  any module preset file. Recalling changes the running app, so it happens in
@@ -20,6 +20,7 @@ enum PresetModule {
     PRESET_FLAMES,
     PRESET_MILKDROP,
     PRESET_SHADER,
+    PRESET_SHEEP,
     PRESET_LIGHTS,
     PRESET_N_MODULES
 };
@@ -28,7 +29,7 @@ class PresetManager {
 public:
     PresetManager(ofApp &app) : app(app) {}
 
-    static string moduleName(int module);   // also its folder: global, flames, milkdrop, shader, lights
+    static string moduleName(int module);   // also its folder: global, flames, milkdrop, shader, sheep, lights
     string folder(int module);
     vector<string> list(int module);        // preset names, sorted
 

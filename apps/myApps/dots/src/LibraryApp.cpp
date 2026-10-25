@@ -15,7 +15,7 @@ static void hideLibraryInsteadOfClosing(GLFWwindow *window) {
     glfwHideWindow(window);
 }
 
-static const char *moduleTitles[PRESET_N_MODULES] = {"Global", "Flames", "MilkDrop", "Shader", "Lights"};
+static const char *moduleTitles[PRESET_N_MODULES] = {"Global", "Flames", "MilkDrop", "Shader", "Sheep", "Lights"};
 
 void LibraryApp::setup() {
     ofSetWindowTitle("dots library");

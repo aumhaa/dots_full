@@ -37,6 +37,8 @@ public:
     int getIndex() const { return sheep; }
     string getName(int index) const;
     void select(int index);
+    // Morphs to the sheep over the given seconds instead of the morph time (a preset's fade)
+    void select(int index, float morphOverride);
     void next() { select(sheep + 1); }
     void previous() { select(sheep - 1); }
     string getStatus() const;
@@ -70,6 +72,6 @@ private:
     int count = 0;
     flam3_genome frame;      // this frame's genome
     flam3_genome pair[2];    // the two sheep of a morph, turned
-    float phase = 0, morphTime = 0;
+    float phase = 0, morphTime = 0, morphDuration = 0, nextMorph = -1;
     int shownSheep = -1, morphFrom = -1, loopsDone = 0, unsupported = 0;
 };

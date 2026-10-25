@@ -48,6 +48,11 @@ the turning, bass twists the xforms further and pulses the zoom, the level
 brightens it, and the high end shifts the colours along the palette, each with
 its own amount (0 turns it off).
 
+Sheep presets (the library's Sheep list, and part of every global preset, so
+sets step through sheep too) keep the sheep and all its settings and whether
+it's running. The settings glide over the preset fade; the sheep morphs in over
+the same time rather than running through the ones in between.
+
 The Sheep panel (and sheep mode's dials on the modGrid): the sheep, loop
 seconds, morph seconds, loops a sheep, auto advance, shuffle, the flock
 (points, in thousands), passes (steps a frame), trail (how much of the picture
@@ -159,7 +164,7 @@ would for 15 s and quits, for checking what an input does to other gear.
 The "dots library" window (ImGui; "show library (l)" in the Meta panel, its
 close button only hides it) has two tabs.
 
-**Presets**: presets for each module (flames, MilkDrop, shader, lights) and
+**Presets**: presets for each module (flames, MilkDrop, shader, sheep, lights) and
 global ones (the mixer plus every module; lights only with "save with
 lights", since they're usually per venue), saved as JSON in
 `bin/data/presets/<module>/<name>.json`. Double-click to recall; Save new,
