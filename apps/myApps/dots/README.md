@@ -17,11 +17,31 @@ the Syphon framework path.
 
 ### Engines and the mixer
 
-dots has three engines: the flames, MilkDrop and the ISF shader engine. The
-Mixer panel puts one on A and one on B (0 flames, 1 MilkDrop, 2 shader; CC 27
-and CC 28) with a crossfade between them (CC 21). An engine only works while
+dots has four engines: the flames, MilkDrop, the shader engine (ISF and
+Synesthesia) and Electric Sheep. The Mixer panel puts one on A and one on B
+(0 flames, 1 MilkDrop, 2 shader, 3 sheep; CC 27 and CC 28) with a crossfade
+between them (CC 21). An engine only works while
 it's running and something shows it (the mixer, the lights' feed B, or for
 the shader its own Syphon feed); otherwise it holds its last frame.
+
+### Electric Sheep
+
+The sheep engine renders Electric Sheep live on the GPU from their genomes:
+the 1,708 sheep in `bin/data/genebank2.flam3` (the flock's genebank, loaded
+for the flames too). Each turns as a sheep loop does, flam3 rotating its
+xforms a full circle every loop. `src/FlameRenderer.cpp` runs flam3's chaos
+game on a flock of points in a vertex shader (transform feedback keeps each
+point between passes), adds every step to a floating-point histogram that fades
+a little each frame, and tone-maps it as flam3 does (log density, gamma,
+vibrancy). The variations the genebank uses are ported from
+`src/flam3/variations.c`; any other is drawn as linear, and the panel's status
+says how many a sheep has. The Sheep panel: the sheep, loop seconds, the
+flock (points, in thousands), passes (steps a frame), trail (how much of the
+picture a frame keeps), exposure and gamma.
+
+`DOTS_TEST_SHEEP=<folder>` renders a spread of sheep (`DOTS_TEST_SHEEP_COUNT`,
+24 by default) into the folder as PNGs, logs each one's time a frame and
+unsupported variations, and quits.
 
 ### Flames block locks
 
@@ -198,10 +218,10 @@ Bridge app has to be running; dots looks for the port every few seconds.
 `DOTS_MODGRID_PORT=<text>` picks a port by name until one is chosen in the
 library's MIDI tab.
 
-- **Modes** (the right strip's top five buttons): flames, milk, shader, lights,
-  sets. A mode puts its parameters on the 16 dials (names and values on the
-  iPad) and its list on the grid: flames scenes, MilkDrop presets, shaders,
-  set entries, 64 to a page, each pad with a short name, the current item
+- **Modes** (the right strip: flames, milk, shader, lights, sheep, then sets
+  above Modul8). A mode puts its parameters on the 16 dials (names and values
+  on the iPad) and its list on the grid: flames scenes, MilkDrop presets,
+  shaders, sheep, set entries, 64 to a page, each pad with a short name, the current item
   white; press a pad to load it. In **lights** mode the grid is the picture:
   press a pad to move the selected light there; the four buttons above the
   grid's left half pick which light, and each light shows as its letter.

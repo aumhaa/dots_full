@@ -64,6 +64,12 @@ void ofApp::setup(){
 
     crossfade = 0;
     shaderEngine->setup(ofGetWidth(), ofGetHeight(), &synAudio);
+    sheepEngine->setup(ofGetWidth(), ofGetHeight(), stateManager->genebank, stateManager->ngenebank);
+    // DOTS_TEST_SHEEP=folder renders a spread of sheep into it, reports, and quits
+    if (const char *folder = getenv("DOTS_TEST_SHEEP")) {
+        sheepEngine->testShots(folder, getenv("DOTS_TEST_SHEEP_COUNT") ? atoi(getenv("DOTS_TEST_SHEEP_COUNT")) : 24);
+        ofExit();
+    }
     // DOTS_TEST_SCENES=1 compiles and runs every Synesthesia scene, reports, and quits (=all adds ISF)
     if (const char *test = getenv("DOTS_TEST_SCENES")) {
         shaderEngine->testAll(string(test) == "all");
@@ -851,6 +857,7 @@ void ofApp::update(){
     MediaInput &media = shaderEngine->getMedia();
     flamesActive = gui->flamesRunning && (inMix(ENGINE_FLAMES) || lighting->feedBUsesFlames() || (shaderActive && media.usesFlames()));
     milkdropActive = gui->milkdropRunning && (inMix(ENGINE_MILKDROP) || lighting->feedBUsesMilkDrop() || (shaderActive && media.usesMilkDrop()));
+    sheepActive = gui->sheepRunning && inMix(ENGINE_SHEEP);
 
     // The media setting picks the kind; the library picking a file or Syphon feed changes it too
     if (gui->shaderMedia != appliedShaderMedia) {
@@ -863,6 +870,7 @@ void ofApp::update(){
     gui->flamesPaused = !flamesActive;
     gui->milkdropPaused = !milkdropActive;
     gui->shaderPaused = !shaderActive;
+    gui->sheepPaused = !sheepActive;
 
     if (gui->shaderAnimatedOnly != shaderAnimatedOnly || gui->shaderSources != shaderSources) {
         shaderAnimatedOnly = gui->shaderAnimatedOnly;
@@ -1043,6 +1051,9 @@ void ofApp::draw(){
     if (milkdropActive) {
         projectM.render();
     }
+    if (sheepActive) {
+        sheepEngine->render();
+    }
     if (shaderActive) {
         shaderEngine->setKeepAlpha(gui->shaderAlpha);
         shaderEngine->updateMedia(engineFbo(ENGINE_FLAMES), engineFbo(ENGINE_MILKDROP));
@@ -1197,11 +1208,13 @@ void ofApp::windowResized(int w, int h){
     outputFbo.allocate(w, h, GL_RGBA);
     projectM.resize(w, h);
     shaderEngine->resize(w, h);
+    sheepEngine->resize(w, h);
 }
 
 ofFbo &ofApp::engineFbo(int engine) {
     if (engine == ENGINE_MILKDROP) return projectM.getFbo();
     if (engine == ENGINE_SHADER) return shaderEngine->getFbo();
+    if (engine == ENGINE_SHEEP) return sheepEngine->getFbo();
     return flamesFrozen.opacity() > 0 ? flamesFading : visualsFbo;
 }
 

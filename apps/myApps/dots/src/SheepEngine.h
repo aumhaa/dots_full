@@ -1,0 +1,54 @@
+//
+//  SheepEngine.h
+//  dots
+//
+//  Electric Sheep, rendered live: a sheep from the genebank (bin/data/genebank2.flam3,
+//  the flock's genomes, already loaded for the flames) turns as a sheep loop does,
+//  flam3 rotating its xforms a full turn every loop, and FlameRenderer draws each
+//  frame of it on the GPU.
+//
+
+#pragma once
+
+#include "ofMain.h"
+#include "FlameRenderer.h"
+
+class SheepEngine {
+public:
+    SheepEngine();
+    ~SheepEngine();
+
+    // Needs the GL context; the genebank stays the StateManager's
+    void setup(int width, int height, flam3_genome *genebank, int count);
+    void resize(int width, int height);
+    void render();
+    ofFbo &getFbo() { return renderer.getFbo(); }
+
+    int getCount() const { return count; }
+    int getIndex() const { return sheep; }
+    string getName(int index) const;
+    void select(int index);
+    void next() { select(sheep + 1); }
+    void previous() { select(sheep - 1); }
+    string getStatus() const;
+
+    // DOTS_TEST_SHEEP=folder: draws `count` sheep spread over the genebank, a second of each,
+    // and saves each as a PNG with its number, unsupported variations and time per frame
+    void testShots(const string &folder, int count);
+
+    ofParameterGroup parameters;
+    ofParameter<int> sheep;
+    ofParameter<float> loopSeconds;   // a full turn of the sheep
+    ofParameter<int> pointsK;         // the flock, in thousands
+    ofParameter<int> passes;          // steps of every point a frame
+    ofParameter<float> trail;         // how much of the picture a frame keeps
+    ofParameter<float> exposure, gammaScale;
+
+private:
+    FlameRenderer renderer;
+    flam3_genome *genebank = nullptr;
+    int count = 0;
+    flam3_genome frame;   // this frame's genome: the sheep, turned
+    float phase = 0;
+    int shownSheep = -1, unsupported = 0;
+};

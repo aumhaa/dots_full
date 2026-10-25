@@ -20,7 +20,7 @@ static const SectionColor sectionColors[] = {
     {"Wander", 87, 90},         {"Audio Analysis", 72, 80}, {"Drawing", 71, 85},   {"Speed", 74, 84},
     {"Dots", 75, 81},           {"Lines", 76, 79},          {"Audio Effects", 13, 99},
     {"MilkDrop", 16, 83},       {"Lights", 26, 118},        {"Shader", 86, 82},    {"Mixer", 14, 96},
-    {"Sets", 94, 89},           {"Scenes", 71, 85},         {"Modul8", 22, 114},
+    {"Sets", 94, 89},           {"Scenes", 71, 85},         {"Modul8", 22, 114},        {"Sheep", 5, 98},
 };
 static const int COLOR_OFF = 0, COLOR_WHITE = 14;
 
@@ -41,12 +41,10 @@ static const SurfaceButton buttons[] = {
     {15, "mixer", "Mixer"},
     {16, "light A", "Lights"},    {17, "light B", "Lights"},    {18, "light C", "Lights"},   {19, "light D", "Lights"},
     {12, "flames", "Drawing"},    {13, "MilkDrop", "MilkDrop"}, {14, "shader", "Shader"},
-    // Right column: the modes, through the set, and the arrows (up/down the dial pages, left/right the grid's)
-    {33, "flames", "Drawing"},    {34, "milk", "MilkDrop"},     {35, "shader", "Shader"},    {36, "lights", "Lights"},
-    {37, "sets", "Sets"},         {41, "modul8", "Modul8"},
+    // Right column (its mode buttons are the modes' own): the arrows, up/down the dial pages, left/right the grid's
     {70, "^", "Mixer"},           {73, "v", "Mixer"},           {71, "<", "Mixer"},          {72, ">", "Mixer"},
 };
-static const int MIXER_NOTE = 15, FIRST_MODE_NOTE = 33, MODUL8_NOTE = 41;
+static const int MIXER_NOTE = 15;
 static const int UP_NOTE = 70, LEFT_NOTE = 71, RIGHT_NOTE = 72, DOWN_NOTE = 73;
 // Left column: the engine on each side of the mixer (a press steps it), and the crossfader dial
 static const int ENGINE_A_NOTE = 11, ENGINE_B_NOTE = 32, CROSSFADE_CC = 17, SPARE_CC = 16;
@@ -55,18 +53,19 @@ static const int ENGINE_A_NOTE = 11, ENGINE_B_NOTE = 32, CROSSFADE_CC = 17, SPAR
 // key); in lights mode the first four keys pick the light the grid moves, in sets mode the first two
 // step through the set; the rest blank
 static const int FIRST_ROW_NOTE = 100, DIAL_PAGE_NOTE = 107, GRID_PAGE_NOTE = 115, FIRST_KEY = 108;
-// Shown blank: Live's labels would otherwise stay on it
-static const int BLANK_NOTES[] = {40};
-static const char *engineNames[] = {"flames", "MilkDrop", "shader"};
-static const char *engineSections[] = {"Drawing", "MilkDrop", "Shader"};
-// Each mode: its dial pages, what its grid browses (-1: the grid places the selected light), its colour
-struct SurfaceMode { const char *group, *name, *section; int browse; };
-// Modul8's own (the last) has no dial pages or list: its dials and buttons go to Modul8, and the grid
-// keeps the mode before it
+static const char *engineNames[] = {"flames", "MilkDrop", "shader", "sheep"};
+static const char *engineSections[] = {"Drawing", "MilkDrop", "Shader", "Sheep"};
+// Each mode: its button and label, its dial pages, what its grid browses (-1: the grid places the
+// selected light) and its name there, and its colour. Modul8's has no dial pages or list: its dials
+// and buttons go to Modul8, and the grid keeps the mode before it
+struct SurfaceMode { int note; const char *label, *group, *name, *section; int browse; };
 static const SurfaceMode modes[] = {
-    {"flames", "scene", "Drawing", 3},   {"milk", "milk", "MilkDrop", 2},  {"shader", "shader", "Shader", 1},
-    {"lights", "light", "Lights", -1},   {"sets", "sets", "Sets", 0},      {"modul8", "modul8", "Modul8", -1},
+    {33, "flames", "flames", "scene", "Drawing", 3},     {34, "milk", "milk", "milk", "MilkDrop", 2},
+    {35, "shader", "shader", "shader", "Shader", 1},     {36, "lights", "lights", "light", "Lights", -1},
+    {40, "sets", "sets", "sets", "Sets", 0},             {41, "modul8", "modul8", "modul8", "Modul8", -1},
+    {37, "sheep", "sheep", "sheep", "Sheep", 4},
 };
+static const int N_MODES = sizeof(modes) / sizeof(modes[0]);
 static const int MODE_LIGHTS = 3, MODE_SETS = 4, MODE_MODUL8 = 5;
 
 // The link to Modul8 (its modGrid module): dials as CC 0-15 on channel 1 and buttons as CC 0-15 on
@@ -392,12 +391,9 @@ void ModGridSurface::press(int note) {
     GuiApp &gui = *app->gui;
     LightingLayer &lighting = *app->lighting;
     bool lightsGrid = modes[gridMode].browse < 0;
-    if (note >= FIRST_MODE_NOTE && note < FIRST_MODE_NOTE + MODE_MODUL8) {
-        selectMode(note - FIRST_MODE_NOTE);
-        return;
-    }
-    if (note == MODUL8_NOTE) {
-        selectMode(MODE_MODUL8);
+    for (int m = 0; m < N_MODES; ++m) {
+        if (note != modes[m].note) continue;
+        selectMode(m);
         return;
     }
     // A switch on the dial page: a bool flips, a trigger fires
@@ -433,8 +429,8 @@ void ModGridSurface::press(int note) {
             on = !on;
             break;
         }
-        case ENGINE_A_NOTE: gui.engineA = (gui.engineA + 1) % 3; break;
-        case ENGINE_B_NOTE: gui.engineB = (gui.engineB + 1) % 3; break;
+        case ENGINE_A_NOTE: gui.engineA = (gui.engineA + 1) % N_ENGINES; break;
+        case ENGINE_B_NOTE: gui.engineB = (gui.engineB + 1) % N_ENGINES; break;
         case MIXER_NOTE: mixerShown = !mixerShown; break;
         case UP_NOTE: pageInGroup[dialGroup()] = std::max(groupPosition() - 1, 0); break;
         case DOWN_NOTE: pageInGroup[dialGroup()] = std::min(groupPosition() + 1, (int)groupPages().size() - 1); break;
@@ -462,6 +458,7 @@ int ModGridSurface::browseCount() const {
         case BROWSE_SETS: return app->presets->setEntries.size();
         case BROWSE_SHADERS: return app->shaderEngine->getCount();
         case BROWSE_MILKDROP: return milkdropPresets.size();
+        case BROWSE_SHEEP: return app->sheepEngine->getCount();
         case BROWSE_SCENES: {
             StateManager &sm = *app->stateManager;
             return sm.trackIdx >= 0 && sm.trackIdx < (int)sm.tracks.size() ? sm.tracks[sm.trackIdx].scenes.size() : 0;
@@ -480,6 +477,7 @@ int ModGridSurface::browseCurrent() const {
             return found == milkdropPresets.end() ? -1 : found - milkdropPresets.begin();
         }
         case BROWSE_SCENES: return app->stateManager->sceneIdx;
+        case BROWSE_SHEEP: return app->sheepEngine->getIndex();
     }
     return -1;
 }
@@ -491,6 +489,7 @@ string ModGridSurface::browseName(int item) const {
         case BROWSE_SHADERS: return app->shaderEngine->getName(item);
         case BROWSE_MILKDROP: return ofFilePath::getBaseName(milkdropPresets[item]);
         case BROWSE_SCENES: return "scene " + ofToString(item);
+        case BROWSE_SHEEP: return app->sheepEngine->getName(item);
     }
     return "";
 }
@@ -503,6 +502,7 @@ void ModGridSurface::browseLoad(int item) {
             app->projectM.loadPresetFile(ofFilePath::join(app->projectM.getPresetsFolder(), milkdropPresets[item]), true);
             break;
         case BROWSE_SCENES: app->stateManager->selectScene(item); break;
+        case BROWSE_SHEEP: app->sheepEngine->select(item); break;
     }
 }
 
@@ -574,8 +574,6 @@ void ModGridSurface::sendFeedback() {
             case 14: lit = gui.shaderRunning; break;
             case 16: case 17: case 18: case 19: lit = lighting.lights[button.note - 16].on; break;
             case MIXER_NOTE: lit = mixerShown; break;
-            case 33: case 34: case 35: case 36: case 37: lit = mode == button.note - FIRST_MODE_NOTE; break;
-            case MODUL8_NOTE: lit = mode == MODE_MODUL8; break;
             case UP_NOTE: lit = position > 0; section = dialSection; break;
             case DOWN_NOTE: lit = position < positions - 1; section = dialSection; break;
             case LEFT_NOTE: lit = !lightsGrid && browsePage[browse] > 0; section = grid.section; break;
@@ -586,13 +584,13 @@ void ModGridSurface::sendFeedback() {
     }
     int engines[] = {gui.engineA, gui.engineB}, engineNotes[] = {ENGINE_A_NOTE, ENGINE_B_NOTE};
     for (int side = 0; side < 2; ++side) {
-        int engine = ofClamp(engines[side], 0, 2);
+        int engine = ofClamp(engines[side], 0, N_ENGINES - 1);
         sendColor(MAIN_CHANNEL, engineNotes[side], sectionColor(engineSections[engine], true));
         sendText(SYSEX_BUTTON_TEXT, MAIN_CHANNEL - 1, engineNotes[side], string(side ? "B " : "A ") + engineNames[engine]);
     }
-    for (int note : BLANK_NOTES) {
-        sendColor(MAIN_CHANNEL, note, COLOR_OFF);
-        sendText(SYSEX_BUTTON_TEXT, MAIN_CHANNEL - 1, note, "");
+    for (int m = 0; m < N_MODES; ++m) {
+        sendColor(MAIN_CHANNEL, modes[m].note, sectionColor(modes[m].section, mode == m));
+        sendText(SYSEX_BUTTON_TEXT, MAIN_CHANNEL - 1, modes[m].note, modes[m].label);
     }
     for (int key = 0; key < 8; ++key) {   // the keys, which this layout doesn't show
         sendColor(MAIN_CHANNEL, key, COLOR_OFF);

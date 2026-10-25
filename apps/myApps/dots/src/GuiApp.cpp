@@ -134,8 +134,8 @@ void GuiApp::setup() {
 
     // Mixer
     mixerParams.setName("Mixer");
-    mixerParams.add(engineA.set("A (flames/milk/shader)", ENGINE_FLAMES, ENGINE_FLAMES, ENGINE_SHADER));
-    mixerParams.add(engineB.set("B (flames/milk/shader)", ENGINE_MILKDROP, ENGINE_FLAMES, ENGINE_SHADER));
+    mixerParams.add(engineA.set("A (flm/milk/shd/sheep)", ENGINE_FLAMES, ENGINE_FLAMES, ENGINE_SHEEP));
+    mixerParams.add(engineB.set("B (flm/milk/shd/sheep)", ENGINE_MILKDROP, ENGINE_FLAMES, ENGINE_SHEEP));
     mixerParams.add(crossfade.set("crossfade A-B", 0, 0, 1));
     mixerParams.add(presetFadeSeconds.set("preset fade (s)", 2, 0, 10));
     mixerGui.setup(mixerParams);
@@ -156,6 +156,15 @@ void GuiApp::setup() {
     shaderGui.setHeaderBackgroundColor(guiColorForTwister(shaderColor, 110));
     for (std::size_t i = 0; i < shaderGui.getNumControls(); ++i) {
         shaderGui.getControl(i)->setFillColor(guiColorForTwister(shaderColor, 170));
+    }
+
+    // Sheep
+    sheepGui.setup(sheepEngine->parameters);
+    sheepGui.add(sheepRunning.set("running", true));
+    int sheepColor = twisterColorForSection("Sheep");
+    sheepGui.setHeaderBackgroundColor(guiColorForTwister(sheepColor, 110));
+    for (std::size_t i = 0; i < sheepGui.getNumControls(); ++i) {
+        sheepGui.getControl(i)->setFillColor(guiColorForTwister(sheepColor, 170));
     }
 
     // Spotlights: one panel, lights 2-4 folded until needed
@@ -191,6 +200,7 @@ void GuiApp::setup() {
     lightsGui.setPosition(displayGui.getPosition().x + displayGui.getWidth() + 10, 15);
     mixerGui.setPosition(metaGui.getPosition().x, metaGui.getPosition().y + metaGui.getHeight() + 10);
     shaderGui.setPosition(lightsGui.getPosition().x + lightsGui.getWidth() + 10, 15);
+    sheepGui.setPosition(mixerGui.getPosition().x, mixerGui.getPosition().y + mixerGui.getHeight() + 10);
 
 
     float height = MAX(MAX(MAX(MAX(milkdropGui.getPosition().y + milkdropGui.getHeight() + 20,
@@ -402,6 +412,10 @@ void GuiApp::draw() {
     lightsGui.draw();
     mixerGui.draw();
     shaderGui.draw();
+    sheepGui.draw();
+    ofSetColor(255);
+    string sheepStatus = (sheepPaused ? "paused; " : "") + sheepEngine->getStatus();
+    ofDrawBitmapString(sheepStatus.substr(0, 38), sheepGui.getPosition().x, sheepGui.getPosition().y + sheepGui.getHeight() + 14);
     ofSetColor(255);
     float statusY = shaderGui.getPosition().y + shaderGui.getHeight() + 14;
     // The shader's number and name, over two lines if needed

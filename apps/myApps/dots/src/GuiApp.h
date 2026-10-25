@@ -8,6 +8,7 @@
 #include "StateManager.h"
 #include "LightingLayer.h"
 #include "ShaderEngine.h"
+#include "SheepEngine.h"
 
 class ReplaceablePanel : public ofxPanel {
 public:
@@ -87,6 +88,12 @@ public:
     void prevShaderPressed();
     void nextShaderPressed();
     int shownShaderVersion = -1;
+
+    // Sheep: Electric Sheep genomes rendered live; the panel is the engine's own settings
+    shared_ptr<SheepEngine> sheepEngine;
+    ofParameter<bool> sheepRunning;
+    ofxPanel sheepGui;
+    bool sheepPaused = false;   // mirrored from ofApp
 
     // Spotlights: a panel, plus dragging them on the preview
     shared_ptr<LightingLayer> lighting;

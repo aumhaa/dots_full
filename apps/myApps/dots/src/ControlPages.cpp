@@ -179,6 +179,17 @@ void ControlPages::build() {
         {"mesh size", "MilkDrop", &gui.milkdropMeshSize},
         {"aspect correct", "MilkDrop", &gui.milkdropAspectCorrection},
     }});
+    SheepEngine &sheep = *app->sheepEngine;
+    pages.push_back({"sheep", "Sheep", "Sheep", {
+        {"sheep", "Sheep", &sheep.sheep},
+        {"loop seconds", "Sheep", &sheep.loopSeconds},
+        {"points (k)", "Sheep", &sheep.pointsK},
+        {"passes", "Sheep", &sheep.passes},
+        {"trail", "Sheep", &sheep.trail},
+        {"exposure", "Sheep", &sheep.exposure},
+        {"gamma", "Sheep", &sheep.gammaScale},
+        {"running", "Sheep", &gui.sheepRunning},
+    }});
     // Sets have no settings of their own: the fade between entries and what's on the mixer
     pages.push_back({"sets", "Sets", "Sets", {
         {"preset fade", "Sets", &gui.presetFadeSeconds},

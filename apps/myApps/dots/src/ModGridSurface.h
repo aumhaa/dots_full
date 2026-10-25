@@ -8,11 +8,12 @@
 //  Sim" pair) and speaks the same protocol (docs in the modGrid repo:
 //  modgrid-script-structure.md and protocol-mpe-v1.md).
 //
-//    right strip 33-37         the modes: flames, milk, shader, lights, sets. A
-//                              mode puts its parameters on the dials and its
-//                              list on the grid (flames scenes, MilkDrop presets,
-//                              shaders, set entries); in lights mode the grid
-//                              places the selected light, keys 108-111 pick it
+//    right strip 33-37, 40     the modes: flames, milk, shader, lights, sheep,
+//                              sets. A mode puts its parameters on the dials and
+//                              its list on the grid (flames scenes, MilkDrop
+//                              presets, shaders, sheep, set entries); in lights
+//                              mode the grid places the selected light, keys
+//                              108-111 pick it
 //    16 dials (CC 0-15)        a page of the mode's parameters (ControlPages),
 //                              with their names and values on the iPad
 //    arrows 70/73, 71/72       up/down the dial pages, left/right the grid's;
@@ -73,7 +74,7 @@ public:
     void newMidiMessage(ofxMidiMessage &message) override;
 
 private:
-    enum Browse { BROWSE_SETS, BROWSE_SHADERS, BROWSE_MILKDROP, BROWSE_SCENES, N_BROWSE };
+    enum Browse { BROWSE_SETS, BROWSE_SHADERS, BROWSE_MILKDROP, BROWSE_SCENES, BROWSE_SHEEP, N_BROWSE };
 
     void connect();
     void disconnect();
@@ -134,7 +135,7 @@ private:
 
     int mode = 0, gridMode = 0, browse = BROWSE_SCENES;   // gridMode: the mode whose list the grid shows
     bool mixerShown = false;           // the mixer's dials, over the mode's
-    int browsePage[N_BROWSE] = {0, 0, 0, 0};
+    int browsePage[N_BROWSE] = {};
     std::map<string, int> pageInGroup;   // group -> the page it's on
     vector<string> milkdropPresets;    // relative to the presets folder
 

@@ -23,5 +23,7 @@
 #define ENGINE_FLAMES 0
 #define ENGINE_MILKDROP 1
 #define ENGINE_SHADER 2
+#define ENGINE_SHEEP 3
+#define N_ENGINES 4
 
 #endif /* appConstants_h */

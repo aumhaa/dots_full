@@ -9,6 +9,7 @@
 #include "ProjectMEngine.h"
 #include "LightingLayer.h"
 #include "ShaderEngine.h"
+#include "SheepEngine.h"
 #include "SynAudio.h"
 #include "ModGridSurface.h"
 #include "PresetManager.h"
@@ -130,6 +131,7 @@ public:
 
     // ISF shaders, shared with the GUI
     shared_ptr<ShaderEngine> shaderEngine;
+    shared_ptr<SheepEngine> sheepEngine;
     ofxSyphonServer shaderSyphonServer;   // "dots shader": the shader engine's own output
 
     // Presets, and work other windows hand over to run here, in this window's GL context
@@ -138,7 +140,7 @@ public:
     void post(std::function<void()> action) { pendingActions.push_back(action); }
 
     // Which engines work this frame, and each engine's picture
-    bool milkdropActive = false, shaderActive = false;
+    bool milkdropActive = false, shaderActive = false, sheepActive = false;
     bool shaderAnimatedOnly = true;
     int shaderSources = 0;
     SynAudio synAudio;   // Synesthesia's audio uniforms, from the same input

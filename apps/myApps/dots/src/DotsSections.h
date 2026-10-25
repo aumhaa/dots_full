@@ -28,6 +28,7 @@ static const vector<DotsSection> dotsSections = {
     {"MilkDrop",        72},  // orange
     {"Lights",         120},  // violet
     {"Shader",         100},  // magenta
+    {"Sheep",           55},  // lime
 };
 
 inline int twisterColorForSection(const string &group) {
