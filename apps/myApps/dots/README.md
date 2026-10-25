@@ -179,6 +179,14 @@ previous/next, or double-click an entry. Changes save at once. Over MIDI,
 notes 9 and 10 on channel 1 step to the previous/next entry; the `-` and `=`
 keys do the same.
 
+### The control window's arrangement
+
+The panels sit on a grid of panel-wide columns by default (the preview and the
+audio box span the first two). Drag them anywhere, fold what you don't need,
+size and place the window: dots keeps it all in `bin/data/layout.json` (saved a
+moment after a change and on quitting, kept out of git) and comes back that
+way. Delete the file to go back to the default.
+
 ### Pausing the engines
 
 "flames running" (Meta panel, CC 25), MilkDrop's "running" (CC 26) and the

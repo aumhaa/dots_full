@@ -52,6 +52,14 @@ public:
     // Closing the control window quits dots (the viewer only ever hides)
     void exit();
 
+    // The window's arrangement, kept in bin/data/layout.json: each panel's place and which of its
+    // sections are folded, and the window's size and place. Saved a moment after it changes and on
+    // quitting; at launch it replaces the default layout.
+    ofJson layout();
+    void applyLayout(const ofJson &layout);
+    vector<pair<string, ofxPanel *>> panels();
+    string savedLayout;
+
     // MilkDrop (projectM), mixed over the flames
     ofParameterGroup milkdropParams;
     ofParameter<float> milkdropPresetDuration;

@@ -168,13 +168,13 @@ void GuiApp::setup() {
         sheepGui.getControl(i)->setFillColor(guiColorForTwister(sheepColor, 170));
     }
 
-    // Spotlights: one panel, lights 2-4 folded until needed
+    // Spotlights: one panel, each light folded until needed
     lightsGui.setup(lighting->parameters);
     lightsGui.add(saveLightsBtn.setup("Save snapshot"));
     lightsGui.add(loadLightsBtn.setup("Load snapshot"));
     saveLightsBtn.addListener(this, &GuiApp::saveLightsPressed);
     loadLightsBtn.addListener(this, &GuiApp::loadLightsPressed);
-    for (int i = 1; i < LIGHTING_N_LIGHTS; ++i) {
+    for (int i = 0; i < LIGHTING_N_LIGHTS; ++i) {
         lightsGui.getGroup(lighting->lights[i].group.getName()).minimize();
     }
     int lightsColor = twisterColorForSection("Lights");
@@ -190,34 +190,37 @@ void GuiApp::setup() {
         }
     }
 
-    // A grid of columns as wide as a panel. The preview and the audio under it span the first two,
-    // with Audio Input, Meta and MilkDrop under them; the tracks and the sheep; the scene, mixer
-    // and debug; the lights; the shader and its inputs. The window fits what's there.
+    // A grid of columns as wide as a panel (amnra's arrangement): the preview and the audio under it
+    // span the first two, with Audio Input, Meta and Debug, and Tracks and the Mixer, under them; the
+    // track, locks, MilkDrop and sheep; the scene and lights; the shader and its inputs. The window
+    // fits what's there.
     sheepGui.getGroup(sheepEngine->audioParameters.getName()).minimize();
     const float column = inputGui.getWidth() + 10;
     auto x = [column](int k) { return 10 + k * column; };
-    auto below = [](ofxPanel &panel) { return panel.getPosition().y + panel.getHeight() + 10; };
+    auto below = [](ofxPanel &panel, float extra = 0) { return panel.getPosition().y + panel.getHeight() + 10 + extra; };
     const float underPreview = PREVIEW_TOP + PREVIEW_HEIGHT + 10 + AUDIO_HEIGHT + 10;
-    milkdropGui.setPosition(x(0), underPreview);
-    inputGui.setPosition(x(1), underPreview);
-    metaGui.setPosition(x(1), below(inputGui));
+    inputGui.setPosition(x(0), underPreview);
+    metaGui.setPosition(x(0), below(inputGui));
+    debugGui.setPosition(x(0), below(metaGui));
+    trackControlGui.setPosition(x(1), underPreview);
+    mixerGui.setPosition(x(1), below(trackControlGui));
     trackParamsGui.setPosition(x(2), 75);
-    trackControlGui.setPosition(x(2), below(trackParamsGui));
-    locksGui.setPosition(x(2), below(trackControlGui));
-    sheepGui.setPosition(x(2), below(locksGui));
+    locksGui.setPosition(x(2), below(trackParamsGui));
+    milkdropGui.setPosition(x(2), below(locksGui));
+    sheepGui.setPosition(x(2), below(milkdropGui, 14));   // under MilkDrop's preset name
     displayGui.setPosition(x(3), 15);
-    mixerGui.setPosition(x(3), below(displayGui));
-    debugGui.setPosition(x(3), below(mixerGui));
-    lightsGui.setPosition(x(4), 15);
-    shaderGui.setPosition(x(5), 15);
+    lightsGui.setPosition(x(3), below(displayGui));
+    shaderGui.setPosition(x(4), 15);
 
     float height = 0;
-    for (ofxPanel *panel : {&milkdropGui, &metaGui, &sheepGui, &debugGui}) {
+    for (ofxPanel *panel : {&debugGui, &mixerGui, &sheepGui, &lightsGui}) {
         height = MAX(height, panel->getPosition().y + panel->getHeight() + 30);   // and a line of status
     }
-    // Room for the lights panel with a second light open
-    height = MAX(height, lightsGui.getPosition().y + lightsGui.getHeight() + 150);
-    ofSetWindowShape(x(6), height);
+    ofSetWindowShape(x(5), height);
+
+    // ... unless it was arranged otherwise last time
+    if (ofFile::doesFileExist("layout.json")) applyLayout(ofLoadJson("layout.json"));
+    savedLayout = layout().dump();
 
     visuals = NULL;
     audioBuckets = NULL;
@@ -232,6 +235,15 @@ void GuiApp::setup() {
 }
 
 void GuiApp::update(){
+    // Keep the arrangement once it's changed (checked every second or so, cheap)
+    if (ofGetFrameNum() % 30 == 15) {
+        string now = layout().dump();
+        if (now != savedLayout) {
+            savedLayout = now;
+            ofSavePrettyJson("layout.json", layout());
+        }
+    }
+
     // A new (or reloaded) shader: a fresh panel of its inputs
     if (shaderEngine->parametersVersion != shownShaderVersion) {
         shownShaderVersion = shaderEngine->parametersVersion;
@@ -462,7 +474,62 @@ void GuiApp::nextShaderPressed() {
 }
 
 void GuiApp::exit() {
+    ofSavePrettyJson("layout.json", layout());
     ofExit();
+}
+
+vector<pair<string, ofxPanel *>> GuiApp::panels() {
+    return {{"audio input", &inputGui}, {"meta", &metaGui}, {"debug", &debugGui}, {"tracks", &trackControlGui},
+            {"mixer", &mixerGui}, {"track", &trackParamsGui}, {"locks", &locksGui}, {"milkdrop", &milkdropGui},
+            {"sheep", &sheepGui}, {"scene", &displayGui}, {"lights", &lightsGui}, {"shader", &shaderGui}};
+}
+
+// A group's folds: its own, and its sections' by name, as deep as they go
+static ofJson folds(ofxGuiGroup &group) {
+    ofJson json = {{"folded", group.isMinimized()}};
+    for (std::size_t i = 0; i < group.getNumControls(); ++i) {
+        if (auto inner = dynamic_cast<ofxGuiGroup *>(group.getControl(i))) json["sections"][inner->getName()] = folds(*inner);
+    }
+    return json;
+}
+
+static void applyFolds(ofxGuiGroup &group, const ofJson &json) {
+    if (json.contains("folded")) {
+        if (json["folded"].get<bool>()) group.minimize();
+        else group.maximize();
+    }
+    if (!json.contains("sections")) return;
+    for (std::size_t i = 0; i < group.getNumControls(); ++i) {
+        auto inner = dynamic_cast<ofxGuiGroup *>(group.getControl(i));
+        if (inner && json["sections"].contains(inner->getName())) applyFolds(*inner, json["sections"][inner->getName()]);
+    }
+}
+
+ofJson GuiApp::layout() {
+    ofJson json;
+    json["window"] = {{"x", ofGetWindowPositionX()}, {"y", ofGetWindowPositionY()},
+                      {"width", ofGetWindowWidth()}, {"height", ofGetWindowHeight()}};
+    for (auto &[name, panel] : panels()) {
+        json["panels"][name] = folds(*panel);
+        json["panels"][name]["x"] = panel->getPosition().x;
+        json["panels"][name]["y"] = panel->getPosition().y;
+    }
+    return json;
+}
+
+void GuiApp::applyLayout(const ofJson &json) {
+    if (!json.is_object()) return;
+    for (auto &[name, panel] : panels()) {
+        if (!json.contains("panels") || !json["panels"].contains(name)) continue;
+        const ofJson &saved = json["panels"][name];
+        applyFolds(*panel, saved);
+        if (saved.contains("x") && saved.contains("y")) panel->setPosition(saved["x"].get<float>(), saved["y"].get<float>());
+    }
+    if (json.contains("window")) {
+        const ofJson &window = json["window"];
+        ofSetWindowShape(window.value("width", ofGetWindowWidth()), window.value("height", ofGetWindowHeight()));
+        ofSetWindowPosition(window.value("x", ofGetWindowPositionX()), window.value("y", ofGetWindowPositionY()));
+    }
 }
 
 void GuiApp::saveLightsPressed() {

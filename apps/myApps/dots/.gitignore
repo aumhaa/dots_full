@@ -75,3 +75,7 @@ bin/data/projectM/
 
 # Lighting snapshots are per venue, kept local
 bin/data/lights/
+
+# The control window's arrangement and the MIDI ports chosen, per machine
+bin/data/layout.json
+bin/data/midi.json
