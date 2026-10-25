@@ -914,6 +914,9 @@ void ofApp::draw(){
     ofSetColor(255);
     outputFbo.draw(0, 0);
 
+    // In a core profile context Syphon copies the frame from a second, shared
+    // context, which only sees our drawing once it has been flushed
+    glFlush();
     syphonServer.publishTexture(&outputFbo.getTexture());
 
 //    char str[25];
