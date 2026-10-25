@@ -11,6 +11,8 @@ static const int MAIN_CHANNEL = 16, PAD_CHANNEL_LOW = 14, PAD_CHANNEL_HIGH = 15;
 static const vector<unsigned char> sysexHeader = {0xF0, 0x00, 0x01, 0x61, 0x5D, 0x5D};
 static const int SYSEX_BUTTON_TEXT = 0, SYSEX_DIAL_NAME = 1, SYSEX_DIAL_VALUE = 2;
 static const int SYSEX_REQUEST_UPDATE = 0x09, SYSEX_CAPS = 0x45, SYSEX_STATE_REQUEST = 0x46;
+// From the script, 0x09 with a value sets the app's view; 1 is the half view (the 8x8 grid)
+static const int SYSEX_SET_VIEW = 0x09, VIEW_HALF = 1;
 
 // modGrid palette numbers (its docs/palette.json) for each section: bright, then dim
 struct SectionColor { const char *section; int bright, dim; };
@@ -68,10 +70,10 @@ static const int MODE_LIGHTS = 3, MODE_SETS = 4, MODE_MODUL8 = 5;
 
 // The link to Modul8 (its modGrid module): dials as CC 0-15 on channel 1 and buttons as CC 0-15 on
 // channel 2 (127 pressed, 0 released), as a Midi Fighter Twister sends them. Modul8 answers with dial
-// values on channel 1 and button colours on channel 2 (Twister colour values, 0 off); CC 127 on
-// channel 1 asks it for everything.
+// values on channel 1, button colours on channel 2 (Twister colour values, 0 off) and, for a button
+// named two ways ("A|B"), its state on channel 3; CC 127 on channel 1 asks it for everything.
 static const string LINK_VIRTUAL_NAME = "dots modGrid";
-static const int LINK_DIAL_CHANNEL = 1, LINK_BUTTON_CHANNEL = 2, LINK_REFRESH_CC = 127;
+static const int LINK_DIAL_CHANNEL = 1, LINK_BUTTON_CHANNEL = 2, LINK_STATE_CHANNEL = 3, LINK_REFRESH_CC = 127;
 // A Twister colour value 1-127 is a hue, blue at 0 round through green, yellow and red to blue at 127;
 // these are the brightest modGrid palette colours nearest each 15 degrees of hue
 static const int hueColors[24] = {127, 16, 16, 94, 88, 5, 5, 6, 6, 6, 7, 7, 78, 72, 76, 77, 77, 87, 87, 73, 86, 27, 27, 74};
@@ -80,14 +82,15 @@ static int twisterColor(int value) {
     float hue = std::fmod(240 - value * 360.0f / 127 + 720, 360);
     return hueColors[(int)std::round(hue / 15) % 24];
 }
-// What the modGrid module does with each dial and button, for their names on the iPad; bin/data/modul8.json
-// ({"dials": [16 names], "buttons": [16 names]}) replaces them when the module changes
+// What the modGrid module does with each dial and button (each button under its dial), for their names
+// on the iPad; bin/data/modul8.json ({"dials": [16 names], "buttons": [16 names]}) replaces them when the
+// module changes. A name with two forms ("A|B") shows the first while the button's state is off.
 static const char *modul8DialNames[16] = {
-    "alpha 1", "red", "green", "blue", "alpha 2", "saturation", "lightness", "contrast",
-    "alpha 3", "scale", "speed", "transition", "alpha 4", "", "", "crossfader"};
+    "crossfade", "alpha 1", "alpha 2", "", "transition", "saturation", "lightness", "contrast",
+    "speed", "alpha 3", "alpha 4", "", "scale", "red", "green", "blue"};
 static const char *modul8ButtonNames[16] = {
-    "layer 1", "red add", "green add", "blue add", "layer 2", "sat on", "light on", "contr on",
-    "layer 3", "", "", "", "layer 4", "invert", "flash", "layers 6-9"};
+    "A|B", "layer 1", "layer 2", "", "invert", "sat on", "light on", "contr on",
+    "", "layer 3", "layer 4", "", "flash", "red+", "green+", "blue+"};
 // A pad shows its item's name, wrapped onto lines; this many letters at most
 static const int PAD_TEXT_LENGTH = 32;
 
@@ -335,6 +338,7 @@ void ModGridSurface::handleLink(const ofxMidiMessage &message) {
     if (message.status != MIDI_CONTROL_CHANGE || message.control >= 16) return;
     if (message.channel == LINK_DIAL_CHANNEL) modul8Dials[message.control].value = message.value;
     if (message.channel == LINK_BUTTON_CHANNEL) modul8Buttons[message.control].value = message.value;
+    if (message.channel == LINK_STATE_CHANNEL) modul8Buttons[message.control].state = message.value;
 }
 
 // The dial pages on show: the mixer's while it's up, else the mode's
@@ -507,6 +511,10 @@ void ModGridSurface::refresh() {
     sentColors.clear();
     sentDials.clear();
     sentTexts.clear();
+    // The half view: the 8x8 grid this layout is for
+    vector<unsigned char> bytes = sysexHeader;
+    bytes.insert(bytes.end(), {(unsigned char)SYSEX_SET_VIEW, (unsigned char)VIEW_HALF, 0xF7});
+    out.sendMidiBytes(bytes);
 }
 
 void ModGridSurface::sendFeedback() {
@@ -592,7 +600,8 @@ void ModGridSurface::sendFeedback() {
         if (mode == MODE_MODUL8) {
             const Modul8Control &button = modul8Buttons[note - FIRST_ROW_NOTE];
             color = button.name.empty() && !button.value ? COLOR_OFF : button.value ? twisterColor(button.value) : sectionColor("Modul8", false);
-            text = button.name;
+            std::size_t bar = button.name.find('|');
+            text = bar == string::npos ? button.name : button.state ? button.name.substr(bar + 1) : button.name.substr(0, bar);
         } else if (note == DIAL_PAGE_NOTE && current) {
             color = sectionColor(current->section, true);
             text = all[shownPages.front()].name + " " + ofToString(position + 1) + "/" + ofToString(positions);

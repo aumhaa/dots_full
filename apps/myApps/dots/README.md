@@ -222,12 +222,19 @@ library's MIDI tab.
   Twister's knobs (CC 0-15, channel 1) and buttons (CC 0-15, channel 2), and
   shows what comes back: dial values, and button colours as Twister colour
   values. Modul8 runs `modul8/modGrid.m8m` (copy it into
-  `/Applications/modul8v3/Modules`; pick `dots modGrid` in its list). Its
-  layout is the Twister module's Modul8 side: four layers' alpha and select,
-  colour, saturation/lightness/contrast, scale, speed, transition, crossfader,
-  invert and flash. Modul8 can't send the names, so dots holds them:
-  `bin/data/modul8.json` (`{"dials": [16 names], "buttons": [16 names]}`)
-  replaces the built-in ones when the module's layout changes.
+  `/Applications/modul8v3/Modules`; pick `dots modGrid` in its list). Each
+  button sits under its dial. Dials: crossfade, alpha 1, alpha 2, -,
+  transition, saturation, lightness, contrast / speed, alpha 3, alpha 4, -,
+  scale, red, green, blue. Buttons: bank A or B (layers 1-4 or 6-9), layer 1,
+  layer 2, -, invert, saturation, lightness and contrast on / -, layer 3,
+  layer 4, -, flash, red, green and blue additive. Modul8 can't send the
+  names, so dots holds them: `bin/data/modul8.json` (`{"dials": [16 names],
+  "buttons": [16 names]}`) replaces the built-in ones when the module's layout
+  changes; a name like `A|B` shows the form the button's state (CC on
+  channel 3 from the module) picks.
+
+On connecting, and whenever the app asks for everything, dots puts the app in
+its half view (the 8x8 grid this layout is for).
 
 The library's **MIDI** tab picks the iPad's port (or the first modGrid port, an
 iPad before the Simulator) and the Modul8 link (dots's own ports, or a pair

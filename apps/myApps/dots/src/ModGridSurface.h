@@ -84,7 +84,7 @@ private:
     void handleLink(const ofxMidiMessage &message);
     void press(int note);
     void pressPad(int row, int column);
-    void refresh();                       // forget what was sent, so everything goes again
+    void refresh();                       // set the half view, and forget what was sent so everything goes again
     void sendFeedback();
     void sendCaps();
 
@@ -129,7 +129,7 @@ private:
     string surfaceChoice, linkChoice;
     vector<string> portsIn, portsOut;
     const string PORTS_FILE = "midi.json";
-    struct Modul8Control { string name; int value = 0; };   // a dial's 0-127, a button's Twister colour
+    struct Modul8Control { string name; int value = 0, state = 0; };   // a dial's 0-127, a button's Twister colour and state
     Modul8Control modul8Dials[16], modul8Buttons[16];
 
     int mode = 0, gridMode = 0, browse = BROWSE_SCENES;   // gridMode: the mode whose list the grid shows

@@ -3176,7 +3176,7 @@
 		</dict>
 	</array>
 	<key>DESCRIPTION</key>
-	<string>Modul8's side of dots's Modul8 mode on the modGrid iPad app. dots owns the iPad; in its Modul8 mode (the right column's lower button) it passes the 16 dials and the two rows of buttons above the grid here over the 'dots modGrid' port (pick it in the list if it isn't picked; dots's library MIDI tab can use an IAC bus instead). The layout is the Twister module's Modul8 side: dials 1, 5, 9, 13 are four layers' alpha and buttons 1, 5, 9, 13 select them (button 16 moves them to layers 6-9); dials 2-4 the colour (buttons 2-4 switch each between modulate and additive); dials 6-8 saturation, lightness and contrast with buttons 6-8 turning them on; dials 10-12 scale, speed and transition; dial 16 the crossfader; buttons 14 and 15 master invert and flash. Values and colours go back to the iPad through dots; the names on the iPad come from dots (bin/data/modul8.json replaces the built-in ones when this layout changes).</string>
+	<string>Modul8's side of dots's Modul8 mode on the modGrid iPad app. dots owns the iPad; in its Modul8 mode (the right column's lower button) it passes the 16 dials and the two rows of buttons above the grid here over the 'dots modGrid' port (pick it in the list if it isn't picked; dots's library MIDI tab can use an IAC bus instead). Each button sits under its dial. Dials: crossfader, alpha 1, alpha 2, -, transition, saturation, lightness, contrast, speed, alpha 3, alpha 4, -, scale, red, green, blue. Buttons: bank A/B (layers 1-4 or 6-9), layer 1, layer 2, -, invert, saturation on, lightness on, contrast on, -, layer 3, layer 4, -, flash, red additive, green additive, blue additive. Values and colours go back to the iPad through dots; the names on the iPad come from dots (bin/data/modul8.json replaces the built-in ones when this layout changes; 'A|B' names a button by the state sent on channel 3).</string>
 	<key>MODULE_AUTOFLUSH</key>
 	<false/>
 	<key>MODULE_CONTROL_ID_COUNTER</key>
@@ -3219,7 +3219,8 @@
 # as a Midi Fighter Twister sends its knobs and buttons. This module answers on the same port: dial
 # values on channel 1 and button colours (Twister colour values, 0 off) on channel 2, which dots shows
 # on the iPad. dots asks for everything again with CC 127 on channel 1. The names on the iPad come
-# from dots (its bin/data/modul8.json, or the ones built in for this layout).
+# from dots (its bin/data/modul8.json, or the ones built in for this layout); a button whose name has
+# two forms ("A|B") shows the one its state picks, sent as CC &lt;button&gt; on channel 3 (0 or 127).
 
 LINK_NAME = u'dots modGrid'
 REFRESH_CC = 127
@@ -3540,9 +3541,16 @@ masterInvert = Attribute('ctrl_master_invColor', 10)
 masterFlash = Attribute('ctrl_master_flash', 10)
 crossfader = Attribute('ctrl_master_crossfader_slider', 10)
 
-# Dials 0, 4, 8 and 12 are four layers' alpha and buttons 0, 4, 8 and 12 select those layers;
-# button 15 moves them from layers 1-4 to 6-9
-layer_button_defs = [0, 4, 8, 12]
+# The iPad's two rows of 8, each button under its dial:
+#   dials    crossfader, alpha 1, alpha 2, -, transition, saturation, lightness, contrast,
+#            speed, alpha 3, alpha 4, -, scale, red, green, blue
+#   buttons  bank A/B, layer 1, layer 2, -, invert, saturation on, lightness on, contrast on,
+#            -, layer 3, layer 4, -, flash, red additive, green additive, blue additive
+# Dials and buttons 1, 2, 9 and 10 are four layers' alpha and selection; button 0 moves them from
+# layers 1-4 (bank A) to 6-9 (bank B)
+layer_button_defs = [1, 2, 9, 10]
+BANK_BUTTON = 0
+STATE_CHANNEL = 3
 selected_layer_control = RadioControl(controls = [button[index] for index in layer_button_defs], offset = 1)
 
 red_shiftable_control = ToggledShiftableControl(primary_attribute = modulateR, secondary_attribute = additiveR, toggle_on_color = 70., toggle_off_color = 80.)
@@ -3554,6 +3562,9 @@ def set_layer_offset(value):
 	selected_layer_control.set_offset(1 if not value else 6)
 	for index in range(4):
 		dial[layer_button_defs[index]].connect_to(alphas[index+(value*5)])
+	# dots names the bank button A or B from this
+	if midiEndPoint:
+		modul8.sendMidi(midiEndPoint, STATE_CHANNEL, 'CONTROL_CHANGE', BANK_BUTTON, 127 if value else 0)
 
 layer_offset = ScriptAttribute(script_attribute = set_layer_offset)
 
@@ -3568,13 +3579,19 @@ def update_controls(*a, **k):
 
 def assign():
 	selected_layer_control.connect_to(selected_layer)
+	dial[0].connect_to(crossfader)
+	dial[4].connect_to(transition)
 	dial[5].connect_to(saturate_lvl)
 	dial[6].connect_to(lightness_lvl)
 	dial[7].connect_to(contrast_lvl)
-	dial[9].connect_to(scale)
-	dial[10].connect_to(speed)
-	dial[11].connect_to(transition)
-	dial[15].connect_to(crossfader)
+	dial[8].connect_to(speed)
+	dial[12].connect_to(scale)
+	button[BANK_BUTTON].connect_to(layer_offset)
+	button[BANK_BUTTON].set_is_toggle(True)
+	button[BANK_BUTTON]._on_color = 10
+	button[BANK_BUTTON]._off_color = 50
+	button[4].connect_to(masterInvert)
+	button[4].set_is_toggle(True)
 	button[5].connect_to(saturate_on)
 	button[5].set_is_toggle(True)
 	button[5]._on_color = 100
@@ -3584,19 +3601,13 @@ def assign():
 	button[7].connect_to(contrast_on)
 	button[7].set_is_toggle(True)
 	button[7]._on_color = 115
-	button[13].connect_to(masterInvert)
-	button[13].set_is_toggle(True)
-	button[14].connect_to(masterFlash)
-	button[15].connect_to(layer_offset)
-	button[15].set_is_toggle(True)
-	button[15]._on_color = 10
-	button[15]._off_color = 50
-	red_shiftable_control.set_shift_control(button[1])
-	red_shiftable_control.set_control(dial[1])
-	green_shiftable_control.set_shift_control(button[2])
-	green_shiftable_control.set_control(dial[2])
-	blue_shiftable_control.set_shift_control(button[3])
-	blue_shiftable_control.set_control(dial[3])
+	button[12].connect_to(masterFlash)
+	red_shiftable_control.set_shift_control(button[13])
+	red_shiftable_control.set_control(dial[13])
+	green_shiftable_control.set_shift_control(button[14])
+	green_shiftable_control.set_control(dial[14])
+	blue_shiftable_control.set_shift_control(button[15])
+	blue_shiftable_control.set_control(dial[15])
 	selected_layer.off(update_controls)
 	selected_layer.on(update_controls)
 	update_controls()
@@ -3609,7 +3620,7 @@ def receive_midi(param):
 		return
 	midi_registry.receive(param)
 
-print('modGrid (dots) b.1 loaded, link %r' % midiEndPoint)
+print('modGrid (dots) b.2 loaded, link %r' % midiEndPoint)
 assign()
 </string>
 	<key>SCRIPT_KEYWORDEVENT</key>
@@ -3630,7 +3641,7 @@ assign()
 	<key>SHORT_DESCRIPTION</key>
 	<string>modGrid iPad through dots</string>
 	<key>VERSION</key>
-	<string>b.1</string>
+	<string>b.2</string>
 	<key>WINDOW_HEIGHT</key>
 	<real>330.0</real>
 	<key>WINDOW_WIDTH</key>
