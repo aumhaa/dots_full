@@ -118,7 +118,7 @@ void ControlPages::build() {
     GuiApp &gui = *app->gui;
     LightingLayer &lighting = *app->lighting;
 
-    pages.push_back({"Flames", "Drawing", {
+    pages.push_back({"flames", "Flames", "Drawing", {
         {"wander speed", "Wander", &sm.activeTrack.wanderSpeed},
         {"fft decay", "Audio Analysis", &scene.fftDecayRate},
         {"centroid max", "Audio Analysis", &scene.centroidMaxBucket},
@@ -136,7 +136,7 @@ void ControlPages::build() {
         {"base dot radius", "Dots", &scene.basePointRadius},
         {"max line length", "Lines", &scene.maxLineLength},
     }});
-    pages.push_back({"Flames 2", "Audio Effects", {
+    pages.push_back({"flames", "Flames 2", "Audio Effects", {
         {"motion id", "Audio Effects", &scene.motionId},
         {"effect size 1", "Audio Effects", &scene.audioEffectSize1},
         {"effect size 2", "Audio Effects", &scene.audioEffectSize2},
@@ -150,57 +150,54 @@ void ControlPages::build() {
         {"lock effects", "Audio Effects", &sm.lockAudioEffects},
         {"wandering", "Wander", &gui.wandering},
         {"fade frames", "Wander", &gui.fadeFrames},
-        {"flames running", "Drawing", &gui.flamesRunning},
     }});
-    pages.push_back({"Mixer", "Mixer", {
+    // The mixer and MilkDrop share a page; the engines' on/off switches are buttons
+    pages.push_back({"mixer", "Mixer", "Mixer", {
         {"crossfade A-B", "Mixer", &gui.crossfade},
         {"engine A", "Mixer", &gui.engineA},
         {"engine B", "Mixer", &gui.engineB},
         {"preset fade", "Mixer", &gui.presetFadeSeconds},
-        {"flames running", "Drawing", &gui.flamesRunning},
-        {"MilkDrop running", "MilkDrop", &gui.milkdropRunning},
-        {"shader running", "Shader", &gui.shaderRunning},
         {"max fps", "Mixer", &gui.maxFps},
         {"audio mode", "Audio Analysis", &gui.audioMode},
-        {"ambient", "Lights", &lighting.ambient},
         {"lights on feed A", "Lights", &lighting.feedAIncludesLights},
         {"feed B source", "Lights", &lighting.feedBSource},
-    }});
-    pages.push_back({"MilkDrop", "MilkDrop", {
-        {"running", "MilkDrop", &gui.milkdropRunning},
-        {"preset seconds", "MilkDrop", &gui.milkdropPresetDuration},
-        {"lock preset", "MilkDrop", &gui.milkdropLockPreset},
-        {"shuffle", "MilkDrop", &gui.milkdropShuffle},
-        {"crossfade A-B", "Mixer", &gui.crossfade},
+        {"milk seconds", "MilkDrop", &gui.milkdropPresetDuration},
+        {"milk lock preset", "MilkDrop", &gui.milkdropLockPreset},
+        {"milk shuffle", "MilkDrop", &gui.milkdropShuffle},
     }});
 
     vector<ControlEntry> inputs;
     addShaderInputs(app->shaderEngine->getShader().parameters, inputs);
-    ControlPage shader1{"Shader", "Shader", {}}, shader2{"Shader 2", "Shader", {}};
+    ControlPage shader1{"shader", "Shader", "Shader", {}}, shader2{"shader", "Shader 2", "Shader", {}};
     for (std::size_t i = 0; i < inputs.size() && i < 32; ++i) (i < 16 ? shader1 : shader2).entries.push_back(inputs[i]);
     pages.push_back(shader1);
-    pages.push_back(shader2);
-    pages.push_back({"Shader set", "Shader", {
-        {"running", "Shader", &gui.shaderRunning},
+    if (!shader2.entries.empty()) pages.push_back(shader2);
+    pages.push_back({"shader", "Shader set", "Shader", {
         {"animated only", "Shader", &gui.shaderAnimatedOnly},
         {"kinds all/ISF/syn", "Shader", &gui.shaderSources},
         {"media 0-4", "Shader", &gui.shaderMedia},
         {"alpha out", "Shader", &gui.shaderAlpha},
     }});
 
-    // The lights: the shared settings, then each light's on, intensity, hue and size
-    ControlPage lights{"Lights", "Lights", {
+    // The lights (their on/off switches are buttons): the shared settings and each light's
+    // intensity, hue and size, then each one's saturation, position and focus
+    ControlPage lights{"lights", "Lights", "Lights", {
         {"ambient", "Lights", &lighting.ambient},
         {"lights on feed A", "Lights", &lighting.feedAIncludesLights},
         {"feed B source", "Lights", &lighting.feedBSource},
-        {"selected light", "Lights", &lighting.selected},
     }};
+    ControlPage lights2{"lights", "Lights 2", "Lights", {}};
     for (int i = 0; i < LIGHTING_N_LIGHTS; ++i) {
         Light &light = lighting.lights[i];
-        string n = ofToString(i + 1);
+        string n = string(1, 'A' + i);
         lights.entries.push_back({n + " intensity", "Lights", &light.intensity});
         lights.entries.push_back({n + " hue", "Lights", &light.hue});
         lights.entries.push_back({n + " size", "Lights", &light.size});
+        lights2.entries.push_back({n + " saturation", "Lights", &light.saturation});
+        lights2.entries.push_back({n + " x", "Lights", &light.x});
+        lights2.entries.push_back({n + " y", "Lights", &light.y});
+        lights2.entries.push_back({n + " focus", "Lights", &light.focus});
     }
     pages.push_back(lights);
+    pages.push_back(lights2);
 }

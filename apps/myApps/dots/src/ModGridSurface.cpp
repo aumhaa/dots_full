@@ -29,20 +29,53 @@ static int sectionColor(const string &section, bool bright) {
     return bright ? COLOR_WHITE : 96;
 }
 
-// The buttons round the dials: what each does, its label, its colour, and when it's lit
+// The buttons with a fixed job: label and colour, lit (or dim) as sendFeedback() decides
 struct SurfaceButton { int note; const char *label, *section; };
 static const SurfaceButton buttons[] = {
+    // Above the dials
     {92, "track <", "Drawing"},   {93, "track >", "Drawing"},   {94, "scene <", "Drawing"},  {95, "scene >", "Drawing"},
     {96, "milk <", "MilkDrop"},   {97, "milk >", "MilkDrop"},   {98, "shader <", "Shader"},  {99, "shader >", "Shader"},
-    {100, "set <", "Sets"},       {101, "set >", "Sets"},       {102, "wander", "Wander"},   {103, "flames", "Drawing"},
-    {104, "MilkDrop", "MilkDrop"}, {105, "shader", "Shader"},   {106, "lights A", "Lights"}, {107, "alpha", "Shader"},
+    // Below them: what the grid browses, and its page
     {108, "sets", "Sets"},        {109, "shaders", "Shader"},   {110, "MilkDrop", "MilkDrop"}, {111, "scenes", "Scenes"},
-    {112, "page <", "Mixer"},     {113, "page >", "Mixer"},     {114, "engine A", "Mixer"},  {115, "engine B", "Mixer"},
+    {114, "page <", "Sets"},      {115, "page >", "Sets"},
+    // Left column: the lights and the engines on or off
+    {16, "light A", "Lights"},    {17, "light B", "Lights"},    {18, "light C", "Lights"},   {19, "light D", "Lights"},
+    {12, "flames", "Drawing"},    {13, "MilkDrop", "MilkDrop"}, {14, "shader", "Shader"},
+    // Right column: through the set
+    {40, "set prev", "Sets"},     {41, "set next", "Sets"},
 };
-static const char *browseNames[] = {"sets", "shaders", "MilkDrop", "scenes"};
+// Left column: the engine on each side of the mixer (a press steps it), and the crossfader dial
+static const int ENGINE_A_NOTE = 11, ENGINE_B_NOTE = 32, CROSSFADE_CC = 17, SPARE_CC = 16;
+// Shown blank: Live's labels would otherwise stay on them
+static const int BLANK_NOTES[] = {15, 100, 101, 102, 103, 104, 105, 106, 107, 112, 113};
+static const char *engineNames[] = {"flames", "MilkDrop", "shader"};
+static const char *engineSections[] = {"Drawing", "MilkDrop", "Shader"};
+static const char *browseNames[] = {"sets", "shader", "milk", "scene"};   // short: "milk 34/154" fits 12 letters
 static const char *browseSections[] = {"Sets", "Shader", "MilkDrop", "Scenes"};
-// The right strip's buttons carry the browse mode and the current item's name
-static const int INFO_NOTES[] = {33, 34, 35, 36, 37};
+// The right strip: the browse mode and page, then a button for each group of dial pages
+static const int BROWSE_INFO_NOTE = 33, GROUP_NOTES[] = {34, 35, 36, 37};
+static const int N_GROUP_NOTES = 4;
+// A pad shows its item's name, wrapped onto lines; this many letters at most
+static const int PAD_TEXT_LENGTH = 32;
+
+// An item's name short enough for a pad: no folders or extension, tighter joins, and a long one
+// kept at both ends, since neighbours in a sorted list share a beginning and differ at the end
+static string padName(string name) {
+    name = ofFilePath::getFileName(name);
+    std::size_t dot = name.rfind('.');
+    if (dot != string::npos && dot > 0 && name.size() - dot <= 5) name = name.substr(0, dot);
+    ofStringReplace(name, "_", " ");
+    ofStringReplace(name, " - ", "-");
+    ofStringReplace(name, " + ", "+");
+    while (name.find("  ") != string::npos) ofStringReplace(name, "  ", " ");
+    std::size_t first = name.find_first_not_of(" $-"), last = name.find_last_not_of(' ');
+    name = first == string::npos ? "" : name.substr(first, last - first + 1);
+    if ((int)name.size() > PAD_TEXT_LENGTH) {
+        int head = (PAD_TEXT_LENGTH - 2) / 2;
+        name = name.substr(0, head) + ".." + name.substr(name.size() - (PAD_TEXT_LENGTH - 2 - head));
+    }
+    return name;
+}
 
 ModGridSurface::~ModGridSurface() {
     disconnect();
@@ -153,9 +186,13 @@ void ModGridSurface::handle(const ofxMidiMessage &message) {
         }
         return;
     }
-    if (message.status == MIDI_CONTROL_CHANGE && message.channel == MAIN_CHANNEL && message.control < 16) {
-        const vector<ControlEntry> &entries = pages.get()[page].entries;
-        if (message.control < (int)entries.size()) entries[message.control].setNormalized(message.value / 127.0f);
+    if (message.status == MIDI_CONTROL_CHANGE && message.channel == MAIN_CHANNEL) {
+        if (message.control < 16) {
+            const vector<ControlEntry> &entries = pages.get()[page].entries;
+            if (message.control < (int)entries.size()) entries[message.control].setNormalized(message.value / 127.0f);
+        } else if (message.control == CROSSFADE_CC) {
+            app->gui->crossfade = message.value / 127.0f;
+        }
         return;
     }
     if (message.status == MIDI_NOTE_ON && message.velocity > 0) {
@@ -168,13 +205,45 @@ void ModGridSurface::handle(const ofxMidiMessage &message) {
     }
 }
 
+// The groups of dial pages, in order, each with its pages
+vector<pair<string, vector<int>>> ModGridSurface::groups() const {
+    vector<pair<string, vector<int>>> found;
+    const vector<ControlPage> &all = pages.get();
+    for (int i = 0; i < (int)all.size(); ++i) {
+        if (found.empty() || found.back().first != all[i].group) found.push_back({all[i].group, {}});
+        found.back().second.push_back(i);
+    }
+    return found;
+}
+
+int ModGridSurface::browsePageCount() const {
+    return std::max(1, (browseCount() + 63) / 64);
+}
+
 void ModGridSurface::press(int note) {
     GuiApp &gui = *app->gui;
-    int pageCount = std::max(1, (browseCount() + 63) / 64);
+    int pageCount = browsePageCount();
     if (note >= 0 && note < 8) {
         if (note < (int)pages.get().size()) page = note;
         return;
     }
+    // A group's button: to the group, at the page it was last on; pressed again, its next page
+    for (int g = 0; g < N_GROUP_NOTES; ++g) {
+        if (note != GROUP_NOTES[g]) continue;
+        auto all = groups();
+        if (g >= (int)all.size()) return;
+        const vector<int> &groupPages = all[g].second;
+        auto at = std::find(groupPages.begin(), groupPages.end(), page);
+        if (at != groupPages.end()) {
+            page = groupPages[(at - groupPages.begin() + 1) % groupPages.size()];
+        } else {
+            int last = lastPageInGroup.count(all[g].first) ? lastPageInGroup[all[g].first] : groupPages[0];
+            page = std::find(groupPages.begin(), groupPages.end(), last) != groupPages.end() ? last : groupPages[0];
+        }
+        lastPageInGroup[all[g].first] = page;
+        return;
+    }
+    LightingLayer &lighting = *app->lighting;
     switch (note) {
         case 92: app->stateManager->noteToSceneParams(0); break;   // previous track
         case 93: app->stateManager->noteToSceneParams(1); break;   // next track
@@ -184,14 +253,18 @@ void ModGridSurface::press(int note) {
         case 97: app->projectM.nextPreset(); break;
         case 98: app->shaderEngine->previous(); break;
         case 99: app->shaderEngine->next(); break;
-        case 100: app->presets->previousInSet(); break;
-        case 101: app->presets->nextInSet(); break;
-        case 102: gui.wandering = !gui.wandering; break;
-        case 103: gui.flamesRunning = !gui.flamesRunning; break;
-        case 104: gui.milkdropRunning = !gui.milkdropRunning; break;
-        case 105: gui.shaderRunning = !gui.shaderRunning; break;
-        case 106: app->lighting->feedAIncludesLights = !app->lighting->feedAIncludesLights; break;
-        case 107: gui.shaderAlpha = !gui.shaderAlpha; break;
+        case 40: app->presets->previousInSet(); break;
+        case 41: app->presets->nextInSet(); break;
+        case 12: gui.flamesRunning = !gui.flamesRunning; break;
+        case 13: gui.milkdropRunning = !gui.milkdropRunning; break;
+        case 14: gui.shaderRunning = !gui.shaderRunning; break;
+        case 16: case 17: case 18: case 19: {
+            ofParameter<bool> &on = lighting.lights[note - 16].on;
+            on = !on;
+            break;
+        }
+        case ENGINE_A_NOTE: gui.engineA = (gui.engineA + 1) % 3; break;
+        case ENGINE_B_NOTE: gui.engineB = (gui.engineB + 1) % 3; break;
         case 108: case 109: case 110: case 111: {
             browse = note - 108;
             if (browse == BROWSE_MILKDROP && milkdropPresets.empty()) scanMilkdrop();
@@ -200,10 +273,8 @@ void ModGridSurface::press(int note) {
             if (current >= 0) browsePage[browse] = current / 64;
             break;
         }
-        case 112: browsePage[browse] = (browsePage[browse] + pageCount - 1) % pageCount; break;
-        case 113: browsePage[browse] = (browsePage[browse] + 1) % pageCount; break;
-        case 114: gui.engineA = (gui.engineA + 1) % 3; break;
-        case 115: gui.engineB = (gui.engineB + 1) % 3; break;
+        case 114: browsePage[browse] = std::max(browsePage[browse] - 1, 0); break;
+        case 115: browsePage[browse] = std::min(browsePage[browse] + 1, pageCount - 1); break;
     }
 }
 
@@ -290,6 +361,15 @@ void ModGridSurface::sendFeedback() {
         sendText(SYSEX_DIAL_VALUE, MAIN_CHANNEL - 1, cc, used ? entry->valueText() : "");
     }
 
+    // The left column's dials: the crossfader, and one spare
+    GuiApp &gui = *app->gui;
+    sendDial(CROSSFADE_CC, (int)std::round(gui.crossfade * 127));
+    sendText(SYSEX_DIAL_NAME, MAIN_CHANNEL - 1, CROSSFADE_CC, "crossfade");
+    sendText(SYSEX_DIAL_VALUE, MAIN_CHANNEL - 1, CROSSFADE_CC, ofToString(gui.crossfade.get(), 2));
+    sendDial(SPARE_CC, 0);
+    sendText(SYSEX_DIAL_NAME, MAIN_CHANNEL - 1, SPARE_CC, "");
+    sendText(SYSEX_DIAL_VALUE, MAIN_CHANNEL - 1, SPARE_CC, "");
+
     // The keys: the pages, this one lit
     for (int key = 0; key < 8; ++key) {
         bool used = key < (int)all.size();
@@ -297,44 +377,70 @@ void ModGridSurface::sendFeedback() {
         sendText(SYSEX_BUTTON_TEXT, MAIN_CHANNEL - 1, key, used ? all[key].name : "");
     }
 
-    // The buttons: switches lit while on, the browse mode lit, the rest dim
-    GuiApp &gui = *app->gui;
-    for (const SurfaceButton &button : buttons) {
-        bool lit = false;
-        switch (button.note) {
-            case 102: lit = gui.wandering; break;
-            case 103: lit = gui.flamesRunning; break;
-            case 104: lit = gui.milkdropRunning; break;
-            case 105: lit = gui.shaderRunning; break;
-            case 106: lit = app->lighting->feedAIncludesLights; break;
-            case 107: lit = gui.shaderAlpha; break;
-            case 108: case 109: case 110: case 111: lit = browse == button.note - 108; break;
+    // The right strip: a button for each group of pages, the group on show lit, with the page and how many
+    auto pageGroups = groups();
+    for (int g = 0; g < N_GROUP_NOTES; ++g) {
+        if (g >= (int)pageGroups.size()) {
+            sendColor(MAIN_CHANNEL, GROUP_NOTES[g], COLOR_OFF);
+            sendText(SYSEX_BUTTON_TEXT, MAIN_CHANNEL - 1, GROUP_NOTES[g], "");
+            continue;
         }
-        sendColor(MAIN_CHANNEL, button.note, sectionColor(button.section, lit));
-        sendText(SYSEX_BUTTON_TEXT, MAIN_CHANNEL - 1, button.note, button.label);
+        const vector<int> &groupPages = pageGroups[g].second;
+        auto at = std::find(groupPages.begin(), groupPages.end(), page);
+        bool showing = at != groupPages.end();
+        int shown = showing ? at - groupPages.begin() : 0;
+        string label = all[groupPages[shown]].name;
+        if (groupPages.size() > 1) label = all[groupPages[0]].name + " " + ofToString(shown + 1) + "/" + ofToString(groupPages.size());
+        sendColor(MAIN_CHANNEL, GROUP_NOTES[g], sectionColor(all[groupPages[0]].section, showing));
+        sendText(SYSEX_BUTTON_TEXT, MAIN_CHANNEL - 1, GROUP_NOTES[g], label);
     }
 
-    // The grid: this page of the browse list, the current item white
-    int count = browseCount(), currentItem = browseCurrent();
+    // The buttons: switches lit while on, the browse mode lit, the page and set buttons dim when they can't move
+    LightingLayer &lighting = *app->lighting;
+    int count = browseCount(), currentItem = browseCurrent(), pageCount = browsePageCount();
+    PresetManager &presets = *app->presets;
+    for (const SurfaceButton &button : buttons) {
+        bool lit = true;
+        const char *section = button.section;
+        switch (button.note) {
+            case 12: lit = gui.flamesRunning; break;
+            case 13: lit = gui.milkdropRunning; break;
+            case 14: lit = gui.shaderRunning; break;
+            case 16: case 17: case 18: case 19: lit = lighting.lights[button.note - 16].on; break;
+            case 108: case 109: case 110: case 111: lit = browse == button.note - 108; break;
+            case 114: lit = browsePage[browse] > 0; section = browseSections[browse]; break;
+            case 115: lit = browsePage[browse] < pageCount - 1; section = browseSections[browse]; break;
+            case 40: lit = presets.setPosition > 0 && !presets.setEntries.empty(); break;
+            case 41: lit = presets.setPosition < (int)presets.setEntries.size() - 1; break;
+        }
+        sendColor(MAIN_CHANNEL, button.note, sectionColor(section, lit));
+        sendText(SYSEX_BUTTON_TEXT, MAIN_CHANNEL - 1, button.note, button.label);
+    }
+    int engines[] = {gui.engineA, gui.engineB}, engineNotes[] = {ENGINE_A_NOTE, ENGINE_B_NOTE};
+    for (int side = 0; side < 2; ++side) {
+        int engine = ofClamp(engines[side], 0, 2);
+        sendColor(MAIN_CHANNEL, engineNotes[side], sectionColor(engineSections[engine], true));
+        sendText(SYSEX_BUTTON_TEXT, MAIN_CHANNEL - 1, engineNotes[side], string(side ? "B " : "A ") + engineNames[engine]);
+    }
+    for (int note : BLANK_NOTES) {
+        sendColor(MAIN_CHANNEL, note, COLOR_OFF);
+        sendText(SYSEX_BUTTON_TEXT, MAIN_CHANNEL - 1, note, "");
+    }
+
+    // The grid: this page of the browse list, each pad with its item's name, the current item white
     for (int row = 0; row < 8; ++row) {
         for (int column = 0; column < 8; ++column) {
             int item = browsePage[browse] * 64 + row * 8 + column;
             int color = item >= count ? COLOR_OFF : item == currentItem ? COLOR_WHITE : sectionColor(browseSections[browse], false);
             sendColor(PAD_CHANNEL_LOW, row * 16 + column, color);
+            sendText(SYSEX_BUTTON_TEXT, PAD_CHANNEL_LOW - 1, row * 16 + column, item < count ? padName(browseName(item)) : "");
         }
     }
 
-    // The right strip: the browse mode and page, then the current item's name in 12-letter pieces
-    int pageCount = std::max(1, (count + 63) / 64);
-    sendText(SYSEX_BUTTON_TEXT, MAIN_CHANNEL - 1, INFO_NOTES[0],
+    // The browse mode and page
+    sendText(SYSEX_BUTTON_TEXT, MAIN_CHANNEL - 1, BROWSE_INFO_NOTE,
              string(browseNames[browse]) + " " + ofToString(browsePage[browse] + 1) + "/" + ofToString(pageCount));
-    sendColor(MAIN_CHANNEL, INFO_NOTES[0], sectionColor(browseSections[browse], true));
-    string name = browseName(currentItem);
-    for (int i = 1; i < 5; ++i) {
-        std::size_t from = (i - 1) * 12;
-        sendText(SYSEX_BUTTON_TEXT, MAIN_CHANNEL - 1, INFO_NOTES[i], from < name.size() ? name.substr(from, 12) : "");
-        sendColor(MAIN_CHANNEL, INFO_NOTES[i], from < name.size() ? sectionColor(browseSections[browse], false) : COLOR_OFF);
-    }
+    sendColor(MAIN_CHANNEL, BROWSE_INFO_NOTE, sectionColor(browseSections[browse], true));
 }
 
 void ModGridSurface::sendColor(int channel, int note, int color) {
@@ -352,7 +458,7 @@ void ModGridSurface::sendDial(int cc, int value) {
     out.sendControlChange(MAIN_CHANNEL, cc, value);
 }
 
-// Text for a control's display: type 0 a button's (12 letters), 1 a dial's name and 2 its value (20 each)
+// Text for a control's display: type 0 a button's (12 letters, a pad's PAD_TEXT_LENGTH), 1 a dial's name and 2 its value (20 each)
 void ModGridSurface::sendText(int type, int channel, int id, const string &text) {
     int key = type << 16 | channel << 8 | id;
     auto sent = sentTexts.find(key);
@@ -362,7 +468,7 @@ void ModGridSurface::sendText(int type, int channel, int id, const string &text)
     bytes.push_back(type);
     bytes.push_back(channel);
     bytes.push_back(id);
-    std::size_t limit = type == SYSEX_BUTTON_TEXT ? 12 : 20;
+    std::size_t limit = type != SYSEX_BUTTON_TEXT ? 20 : channel == PAD_CHANNEL_LOW - 1 ? PAD_TEXT_LENGTH : 12;
     for (std::size_t i = 0; i < text.size() && i < limit; ++i) {
         unsigned char c = text[i];
         bytes.push_back(c >= 0x20 && c < 0x7F ? c : '?');

@@ -10,11 +10,16 @@
 //
 //    16 dials (CC 0-15)        a page of dots's parameters (ControlPages), with
 //                              their names and values shown on the iPad
-//    8 keys (notes 0-7)        pick the page
-//    buttons 92-99, 100-107    previous/next and on/off switches
-//    buttons 108-115           what the grid browses, and its page
+//    right strip 34-37         a button for each group of pages (a second press
+//                              steps through the group); 8 keys (notes 0-7) pick
+//                              a page directly where a layout shows them
+//    buttons 92-99             previous/next track, scene, MilkDrop, shader
+//    buttons 108-111, 114/115  what the grid browses, and its page (dim at the end)
+//    left column               crossfader (CC 17), engine A/B (11, 32), lights
+//                              A-D on/off (16-19), flames/MilkDrop/shader (12-14)
+//    right strip 40/41         previous/next in the set
 //    the 8x8 grid              browse: set entries, shaders, MilkDrop presets,
-//                              flames scenes; the right strip shows names
+//                              flames scenes, each pad named
 //
 //  Main controls are on channel 15 and the grid on 13 and 14 (0-based). Colours
 //  are modGrid palette numbers, sent as the velocity of a note back on the
@@ -58,10 +63,12 @@ private:
 
     // The browse list: how many items, which is current, and loading one
     int browseCount() const;
+    int browsePageCount() const;
     int browseCurrent() const;
     string browseName(int item) const;
     void browseLoad(int item);
     void scanMilkdrop();
+    vector<pair<string, vector<int>>> groups() const;   // the groups of dial pages, each with its pages
 
     // Sending, each only when it changed since it was last sent
     void sendColor(int channel, int note, int color);
@@ -81,6 +88,7 @@ private:
 
     int page = 0, browse = BROWSE_SHADERS;
     int browsePage[N_BROWSE] = {0, 0, 0, 0};
+    std::map<string, int> lastPageInGroup;
     vector<string> milkdropPresets;    // relative to the presets folder
 
     std::map<int, int> sentColors;     // (channel << 8 | note) -> palette index

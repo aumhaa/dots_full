@@ -198,17 +198,21 @@ Bridge app has to be running; dots looks for the port every few seconds.
 `DOTS_MODGRID_PORT=<text>` picks a port by name.
 
 - **16 dials**: a page of dots's parameters, with their names and values on the
-  iPad. The **8 keys** pick the page: Flames, Flames 2 (motion and effect
-  sizes, the block locks), Mixer, MilkDrop, Shader and Shader 2 (the shader's
-  own inputs), Shader set (running, kinds, media, alpha), Lights.
+  iPad. The four buttons under the browse label on the right pick the group of
+  pages, and a second press steps through it: Flames (2 pages: drawing, then
+  motion, effect sizes and the block locks), Mixer (with MilkDrop's timing),
+  Shader (the shader's own inputs over one or two pages, then kinds, media and
+  alpha), Lights (intensity, hue and size, then saturation, position and focus).
+  Layouts that show the 8 keys can pick a page directly with them.
+- **Left column**: the crossfader (top dial), engine A and B (each press steps
+  it), lights A-D on/off, then flames, MilkDrop and shader on/off, lit while on.
 - **Buttons above the dials** (92-99): track, scene, MilkDrop and shader
-  previous/next. **Below** (100-107): set previous/next, then wander, flames,
-  MilkDrop, shader, lights on feed A and alpha out, lit while on. **Bottom row**
-  (108-115): what the grid browses (sets, shaders, MilkDrop, flames scenes),
-  its page back and forward, and engine A and B.
-- **The 8x8 grid** browses that list, 64 to a page, the current item white;
-  press a pad to load it. Pads can't show names, so the right strip shows the
-  list and page and the current item's name.
+  previous/next. **Bottom row**: what the grid browses (sets, shaders,
+  MilkDrop, flames scenes), and the grid's page back and forward (the last two),
+  dim when there's no further page. **Right column**: set previous and next.
+- **The 8x8 grid** browses that list, 64 to a page, each pad with a short
+  name, the current item white; press a pad to load it. The right strip's top
+  button shows the list and the page.
 
 The pages come from `src/ControlPages.cpp`, which is meant to grow into the
 parameter layer every UI shares.
