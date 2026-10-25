@@ -72,3 +72,6 @@ bin/*
 
 # MilkDrop presets and textures, fetched by scripts/build_projectm.sh
 bin/data/projectM/
+
+# Lighting snapshots are per venue, kept local
+bin/data/lights/
