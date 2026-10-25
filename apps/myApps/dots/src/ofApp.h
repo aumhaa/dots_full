@@ -7,12 +7,14 @@
 #include "ofxSyphon.h"
 #include "StateManager.h"
 #include "ProjectMEngine.h"
+#include "LightingLayer.h"
 
 extern "C" {
 #include "flam3.h"
 }
 
 class MidiController;
+struct GLFWwindow;
 
 typedef struct pointPair {
     int idx;
@@ -124,7 +126,15 @@ public:
     ofFbo visualsFbo;   // the flames, with their trails
     ofFbo outputFbo;    // flames and MilkDrop mixed: what the window, the GUI and Syphon show
     shared_ptr<ofTexture> visuals;
-    ofxSyphonServer syphonServer;
+    ofxSyphonServer syphonServer;       // "dots": the final, lit picture
+    ofxSyphonServer feedBSyphonServer;  // "dots B": flames or MilkDrop masked by the spotlights, or the light alone
+
+    // This window (the viewer); dots keeps rendering while it's hidden
+    GLFWwindow *viewerWindow;
+    bool viewerShown;
+
+    // Spotlights over the mixed picture, shared with the GUI and MIDI
+    shared_ptr<LightingLayer> lighting;
 
     // State manager
     shared_ptr<StateManager> stateManager;

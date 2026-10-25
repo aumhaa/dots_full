@@ -1,4 +1,7 @@
 #include "ofApp.h"
+#include "ofAppGLFWWindow.h"
+#define GLFW_INCLUDE_NONE
+#include "GLFW/glfw3.h"
 
 #include "variations.h" // for prepare_precalc_flags and CMAP_SIZE
 #include "AudioDeviceRate.h"
@@ -6,6 +9,13 @@
 
 // TODO: remove entirely
 static const double ispeed = 800.0;
+
+// The viewer's close button hides it instead: closing the window would stop
+// dots rendering for the control window's preview and Syphon
+static void hideViewerInsteadOfClosing(GLFWwindow *window) {
+    glfwSetWindowShouldClose(window, GLFW_FALSE);
+    glfwHideWindow(window);
+}
 
 //--------------------------------------------------------------
 void ofApp::setup(){
@@ -16,7 +26,12 @@ void ofApp::setup(){
     ofHideCursor();
     ofSetEscapeQuitsApp(false);
 
+    viewerWindow = static_cast<ofAppGLFWWindow *>(ofGetWindowPtr())->getGLFWWindow();
+    glfwSetWindowCloseCallback(viewerWindow, hideViewerInsteadOfClosing);
+    viewerShown = false;
+
     syphonServer.setName("dots");
+    feedBSyphonServer.setName("dots B");
 
     nsamples = 25000;
     fullscreen = 1;
@@ -161,7 +176,16 @@ void ofApp::setup(){
 void ofApp::guiUpdate() {
     // Copy data to gui
     gui->frameRate = ofGetFrameRate();
-    gui->visuals = &outputFbo.getTexture();
+
+    // Viewer: the GUI's checkbox shows or hides it; its close button only hides it
+    bool viewerVisible = glfwGetWindowAttrib(viewerWindow, GLFW_VISIBLE);
+    if (gui->showViewer != viewerShown) {
+        viewerShown = gui->showViewer;
+        if (viewerShown) glfwShowWindow(viewerWindow); else glfwHideWindow(viewerWindow);
+    } else if (viewerVisible != viewerShown) {
+        viewerShown = viewerVisible;
+        gui->showViewer = viewerVisible;
+    }
 
     milkdropMix = gui->milkdropMix;
     gui->milkdropPresetName = projectM.getPresetName();
@@ -894,8 +918,8 @@ void ofApp::draw(){
     ofClearAlpha();
     visualsFbo.end();
 
-    // MilkDrop only renders while it's in the mix
-    if (milkdropMix > 0) {
+    // MilkDrop only renders while it's in the mix, or feed B shows it
+    if (milkdropMix > 0 || lighting->feedBUsesMilkDrop()) {
         projectM.render();
     }
 
@@ -911,13 +935,18 @@ void ofApp::draw(){
     }
     outputFbo.end();
 
+    // Spotlights over the mix (outputFbo itself when none is on)
+    ofFbo &finalFbo = lighting->apply(outputFbo);
+    gui->visuals = &finalFbo.getTexture();
+
     ofSetColor(255);
-    outputFbo.draw(0, 0);
+    finalFbo.draw(0, 0);
 
     // In a core profile context Syphon copies the frame from a second, shared
     // context, which only sees our drawing once it has been flushed
     glFlush();
-    syphonServer.publishTexture(&outputFbo.getTexture());
+    syphonServer.publishTexture(&finalFbo.getTexture());
+    feedBSyphonServer.publishTexture(&lighting->renderFeedB(visualsFbo, projectM.getFbo()).getTexture());
 
 //    char str[25];
 //    sprintf(str, "%.2f fps", ofGetFrameRate());
@@ -959,6 +988,8 @@ void ofApp::handleKey(int key) {
         stateManager->mutateCurrent();
     } else if (cmdKeyDown && key == OF_KEY_DOWN) {
         stateManager->killCurrent();
+    } else if (key == 'v') {
+        gui->showViewer = !gui->showViewer;
     } else if (key == '[') {
         projectM.previousPreset();
     } else if (key == ']') {

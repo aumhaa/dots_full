@@ -68,6 +68,7 @@ void GuiApp::setup() {
     metaParams.setName("Meta");
     metaParams.add(wandering.set("wandering", false));
     metaParams.add(fadeFrames.set("fadeFrames", 100, 0, 200));
+    metaParams.add(showViewer.set("show viewer (v)", false));
     metaGui.setup(metaParams);
 
     // MilkDrop
@@ -119,6 +120,28 @@ void GuiApp::setup() {
         milkdropGui.getControl(i)->setFillColor(guiColorForTwister(milkdropColor, 170));
     }
 
+    // Spotlights: one panel, lights 2-4 folded until needed
+    lightsGui.setup(lighting->parameters);
+    lightsGui.add(saveLightsBtn.setup("Save snapshot"));
+    lightsGui.add(loadLightsBtn.setup("Load snapshot"));
+    saveLightsBtn.addListener(this, &GuiApp::saveLightsPressed);
+    loadLightsBtn.addListener(this, &GuiApp::loadLightsPressed);
+    for (int i = 1; i < LIGHTING_N_LIGHTS; ++i) {
+        lightsGui.getGroup(lighting->lights[i].group.getName()).minimize();
+    }
+    int lightsColor = twisterColorForSection("Lights");
+    lightsGui.setHeaderBackgroundColor(guiColorForTwister(lightsColor, 110));
+    for (std::size_t i = 0; i < lightsGui.getNumControls(); ++i) {
+        ofxBaseGui *control = lightsGui.getControl(i);
+        control->setFillColor(guiColorForTwister(lightsColor, 170));
+        if (ofxGuiGroup *group = dynamic_cast<ofxGuiGroup *>(control)) {
+            group->setHeaderBackgroundColor(guiColorForTwister(lightsColor, 110));
+            for (std::size_t j = 0; j < group->getNumControls(); ++j) {
+                group->getControl(j)->setFillColor(guiColorForTwister(lightsColor, 170));
+            }
+        }
+    }
+
     inputGui.setPosition(10, 450);
     milkdropGui.setPosition(inputGui.getPosition().x, inputGui.getPosition().y + inputGui.getHeight() + 10);
     debugGui.setPosition(inputGui.getPosition().x + inputGui.getWidth() + 10, inputGui.getPosition().y);
@@ -126,6 +149,7 @@ void GuiApp::setup() {
     trackParamsGui.setPosition(510, 75);
     trackControlGui.setPosition(trackParamsGui.getPosition().x, trackParamsGui.getPosition().y + trackParamsGui.getHeight() + 10);
     displayGui.setPosition(trackControlGui.getPosition().x + trackControlGui.getWidth() + 10, 15);
+    lightsGui.setPosition(displayGui.getPosition().x + displayGui.getWidth() + 10, 15);
 
 
     float height = MAX(MAX(MAX(MAX(milkdropGui.getPosition().y + milkdropGui.getHeight() + 20,
@@ -133,8 +157,10 @@ void GuiApp::setup() {
                        metaGui.getPosition().y + metaGui.getHeight()),
                        displayGui.getPosition().y + displayGui.getHeight()),
                        trackControlGui.getPosition().y + trackControlGui.getHeight());
+    // Room for the lights panel with one light open
+    height = MAX(height, lightsGui.getPosition().y + lightsGui.getHeight() + 150);
 
-    ofSetWindowShape(displayGui.getPosition().x + displayGui.getWidth() + 10,
+    ofSetWindowShape(lightsGui.getPosition().x + lightsGui.getWidth() + 10,
                      height + 10);
 
     visuals = NULL;
@@ -223,6 +249,25 @@ void GuiApp::draw() {
         ofDrawRectangle(margin + padding, padding, width, height);
         ofSetColor(255, 255);
         visuals->draw(margin + padding, padding, width, height);
+        previewRect.set(margin + padding, 17 + margin + padding, width, height);
+
+        // Spotlight markers: beam outline and number, grey when off; the selected one gets a cross
+        ofPushStyle();
+        ofNoFill();
+        for (int i = 0; i < LIGHTING_N_LIGHTS; ++i) {
+            Light &light = lighting->lights[i];
+            float lx = margin + padding + light.x * width;
+            float ly = padding + light.y * height;
+            ofSetColor(light.on ? ofFloatColor::fromHsb(light.hue, std::max(0.4f, light.saturation.get()), 1) : ofFloatColor(0.5));
+            ofSetLineWidth(i + 1 == lighting->selected ? 2 : 1);
+            ofDrawCircle(lx, ly, light.size * height);
+            if (i + 1 == lighting->selected) {
+                ofDrawLine(lx - 5, ly, lx + 5, ly);
+                ofDrawLine(lx, ly - 5, lx, ly + 5);
+            }
+            ofDrawBitmapString(ofToString(i + 1), lx + 4, ly - 4);
+        }
+        ofPopStyle();
 
         ofTranslate(0, 270 + padding * 2);
     }
@@ -292,6 +337,7 @@ void GuiApp::draw() {
     ofPopMatrix();
 
     inputGui.draw();
+    lightsGui.draw();
     milkdropGui.draw();
     if (!milkdropPresetName.empty()) {
         ofSetColor(255);
@@ -303,6 +349,51 @@ void GuiApp::draw() {
     metaGui.draw();
     trackParamsGui.draw();
     trackControlGui.draw();
+}
+
+void GuiApp::exit() {
+    ofExit();
+}
+
+void GuiApp::saveLightsPressed() {
+    lighting->saveSnapshot(lighting->snapshot);
+}
+
+void GuiApp::loadLightsPressed() {
+    lighting->loadSnapshot(lighting->snapshot);
+}
+
+void GuiApp::moveLightTo(int index, int x, int y) {
+    Light &light = lighting->lights[index];
+    light.x.set(ofClamp((x - previewRect.x) / previewRect.width, 0, 1));
+    light.y.set(ofClamp((y - previewRect.y) / previewRect.height, 0, 1));
+}
+
+// On the preview, a click near a light's centre grabs that light; anywhere
+// else it moves the selected light there. Dragging keeps moving it.
+void GuiApp::mousePressed(int x, int y, int button) {
+    if (!previewRect.inside(x, y)) return;
+
+    draggedLight = lighting->selected - 1;
+    float nearest = 12;   // pixels
+    for (int i = 0; i < LIGHTING_N_LIGHTS; ++i) {
+        Light &light = lighting->lights[i];
+        float d = ofDist(x, y, previewRect.x + light.x * previewRect.width, previewRect.y + light.y * previewRect.height);
+        if (d < nearest) {
+            nearest = d;
+            draggedLight = i;
+        }
+    }
+    lighting->selected.set(draggedLight + 1);
+    moveLightTo(draggedLight, x, y);
+}
+
+void GuiApp::mouseDragged(int x, int y, int button) {
+    if (draggedLight >= 0) moveLightTo(draggedLight, x, y);
+}
+
+void GuiApp::mouseReleased(int x, int y, int button) {
+    draggedLight = -1;
 }
 
 // ofApp owns projectM, so the buttons go through the same key queue as the keyboard

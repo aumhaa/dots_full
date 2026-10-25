@@ -73,8 +73,19 @@ void MidiController::add_listeners() {
         {19, &scene.audioEffectSize3,                 twisterColorForSection("Audio Effects")},
         {20, &scene.audioEffectSize4,                 twisterColorForSection("Audio Effects")},
         {DOTS_CC_MILKDROP_MIX, &gui->milkdropMix,     twisterColorForSection("MilkDrop")},
+        {DOTS_CC_LIGHTS_AMBIENT, &lighting->ambient,  twisterColorForSection("Lights")},
+        {DOTS_CC_FEED_A_LIGHTS, &lighting->feedAIncludesLights, twisterColorForSection("Lights")},
+        {DOTS_CC_FEED_B_SOURCE, &lighting->feedBSource, twisterColorForSection("Lights")},
     };
-    for (int i = 0; i < 24; ++i) {
+    for (int i = 0; i < LIGHTING_N_LIGHTS; ++i) {
+        Light &light = lighting->lights[i];
+        ofAbstractParameter *params[DOTS_CCS_PER_LIGHT] = {&light.on, &light.mode, &light.intensity, &light.hue,
+            &light.saturation, &light.x, &light.y, &light.size, &light.focus, &light.frost};
+        for (int k = 0; k < DOTS_CCS_PER_LIGHT; ++k) {
+            outputs.push_back({DOTS_CC_LIGHTS + i * DOTS_CCS_PER_LIGHT + k, params[k], twisterColorForSection("Lights")});
+        }
+    }
+    for (int i = 0; i < 128; ++i) {
         sentValues[i] = -1;
     }
     lastSendTime = 0;
@@ -91,8 +102,24 @@ static int midiValue(ofAbstractParameter *param) {
     } else if (param->type() == typeid(ofParameter<int>).name()) {
         ofParameter<int> &p = param->cast<int>();
         t = ofMap(p.get(), p.getMin(), p.getMax(), 0, 1, true);
+    } else if (param->type() == typeid(ofParameter<bool>).name()) {
+        t = param->cast<bool>().get() ? 1 : 0;
     }
     return (int)(t * 127.0f);
+}
+
+// Sets a parameter from a 0-127 MIDI value across its min..max (a bool is on from 64)
+static void setFromMidi(ofAbstractParameter *param, int value) {
+    float t = value / 127.0f;
+    if (param->type() == typeid(ofParameter<float>).name()) {
+        ofParameter<float> &p = param->cast<float>();
+        p.set(ofLerp(p.getMin(), p.getMax(), t));
+    } else if (param->type() == typeid(ofParameter<int>).name()) {
+        ofParameter<int> &p = param->cast<int>();
+        p.set((int)round(ofLerp(p.getMin(), p.getMax(), t)));
+    } else if (param->type() == typeid(ofParameter<bool>).name()) {
+        param->cast<bool>().set(value >= 64);
+    }
 }
 
 void MidiController::update() {
@@ -121,8 +148,11 @@ void MidiController::update() {
 
 void MidiController::newMidiMessage(ofxMidiMessage& msg) {
 //    cout << "Rcv midi: " + std::to_string(msg.status) + " " + std::to_string(msg.channel) + " " + std::to_string(msg.control) + " " + std::to_string(msg.pitch) << endl;
-    if (msg.status == 176 && msg.channel == 1 && msg.control == DOTS_CC_MILKDROP_MIX) {
-        gui->milkdropMix.set(msg.value / 127.0f);
+    if (msg.status == 176 && msg.channel == 1 && msg.control >= DOTS_CC_MILKDROP_MIX && msg.control != DOTS_CC_SEND_ALL) {
+        // Everything past the scene parameters (MilkDrop, lights) goes by the outputs table
+        for (const Output &output : outputs) {
+            if (output.cc == msg.control) setFromMidi(output.param, msg.value);
+        }
     } else if (msg.status == 144 && msg.channel == 1 && msg.pitch == DOTS_NOTE_PREV_PRESET && msg.velocity > 0) {
         milkdropPresetSteps--;
     } else if (msg.status == 144 && msg.channel == 1 && msg.pitch == DOTS_NOTE_NEXT_PRESET && msg.velocity > 0) {

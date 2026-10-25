@@ -33,6 +33,38 @@ seconds per preset, lock and shuffle, and previous/next preset (also `[` and
 `]`). Over MIDI: CC 21 on channel 1 is the mix (sent back on DotsOutput like
 the other parameters), notes 5 and 6 on channel 1 are previous/next preset.
 
+### Spotlights
+
+Up to four spotlights sit over the final picture (`src/LightingLayer`). Each
+has on, mode (add: lays coloured light on top; reveal: lights the picture
+under it while everything outside the reveal beams drops to the ambient
+level), intensity, hue, saturation, x, y, size, focus (edge hardness) and
+frost (diffusion). They're set in the control window's Lights panel, or by
+dragging on the preview: a click near a light grabs it, anywhere else moves
+the selected light there.
+
+The lighting is its own layer, apart from tracks and scenes, saved in
+numbered snapshots (`bin/data/lights/snapshot-N.xml`) with the panel's slot,
+Save and Load. It isn't loaded at startup: load the venue's snapshot.
+
+Over MIDI (channel 1): CC 22 ambient, CC 23 lights on feed A, CC 24 feed B's
+source, and CC 32-71 the lights, ten each from 32, 42, 52 and 62 in the order
+above.
+
+### Syphon feeds and the viewer
+
+- **dots**: the final picture, with or without the lights (the Lights panel's
+  "lights on feed A").
+- **dots B**: a top layer with alpha (the amount of light, colour not
+  premultiplied): the flames masked by the light, MilkDrop masked by the light
+  (MilkDrop keeps rendering for it even at mix 0), or the light alone. Fully
+  transparent where no light falls.
+
+The viewer window starts hidden and its close button only hides it; dots
+keeps rendering for the preview and Syphon. Show it with "show viewer (v)" in
+the Meta panel or the `v` key. Closing the control window quits dots. The
+output resolution follows the viewer window's size (1080x720 by default).
+
 ### MIDI and the Twister
 
 dots opens two virtual MIDI ports. `DotsInput` takes CC 0-20 on channel 1

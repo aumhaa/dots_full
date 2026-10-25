@@ -6,6 +6,7 @@
 #include "appConstants.h"
 //#include "MidiController.h"
 #include "StateManager.h"
+#include "LightingLayer.h"
 
 class ReplaceablePanel : public ofxPanel {
 public:
@@ -40,6 +41,10 @@ public:
     ofParameterGroup metaParams;
     ofParameter<bool> wandering;
     ofParameter<int> fadeFrames;
+    ofParameter<bool> showViewer;
+
+    // Closing the control window quits dots (the viewer only ever hides)
+    void exit();
 
     // MilkDrop (projectM), mixed over the flames
     ofParameterGroup milkdropParams;
@@ -50,6 +55,19 @@ public:
     void prevPresetPressed();
     void nextPresetPressed();
     string milkdropPresetName;   // mirrored from ofApp
+
+    // Spotlights: a panel, plus dragging them on the preview
+    shared_ptr<LightingLayer> lighting;
+    ofxPanel lightsGui;
+    ofxButton saveLightsBtn, loadLightsBtn;
+    void saveLightsPressed();
+    void loadLightsPressed();
+    ofRectangle previewRect;     // where the preview was last drawn
+    int draggedLight = -1;
+    void mousePressed(int x, int y, int button);
+    void mouseDragged(int x, int y, int button);
+    void mouseReleased(int x, int y, int button);
+    void moveLightTo(int index, int x, int y);
 
     ofxPanel trackControlGui;
     ofxGuiGroup trackControls;
